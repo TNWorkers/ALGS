@@ -16,7 +16,6 @@
 #include <Eigen/Sparse>
 using namespace Eigen;
 
-#include "LanczosWrappers.h"
 #include "RandomVector.h"
 #include "MemCalc.h"
 #include "StringStuff.h" // for round()
