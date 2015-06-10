@@ -45,8 +45,11 @@ struct LANCZOS
 	};
 };
 
+#ifndef IS_REAL_FUNCTION
+#define IS_REAL_FUNCTION
 inline double isReal (double x) {return x;}
 inline double isReal (complex<double> x) {return x.real();}
+#endif
 
 template<typename VectorType>
 struct Eigenstate
