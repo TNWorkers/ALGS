@@ -1,5 +1,5 @@
-#ifndef LANCZOSPROPAGATOR
-#define LANCZOSPROPAGATOR
+#ifndef LANCZOS_MOWER
+#define LANCZOS_MOWER
 
 #include "LanczosSolver.h"
 

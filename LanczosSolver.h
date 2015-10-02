@@ -114,8 +114,13 @@ protected:
 
 	void edgeStateIteration (const Hamiltonian &H, VectorType &u_out);
 	
+	double next_b;
+	VectorType next_K;
+	void calc_next_ab (const Hamiltonian &H);
+	
 	//--------------<Krylov space>--------------
 	SelfAdjointEigenSolver<MatrixXd> KrylovSolver;
+	MatrixXd Htridiag();
 	void Krylov_diagonalize();
 	vector<VectorType> Kbasis;
 	VectorXd a, b;
@@ -420,14 +425,12 @@ setup_ab (const Hamiltonian &H, const VectorType &u)
 		VectorType w;
 		HxV(H,Kbasis[0],w); ++stat.N_mvm;
 		a(0) = isReal(dot(w,Kbasis[0]));
-//		cout << "a(0)=" << a(0) << endl;
 		
 		// step: 1
 		if (dimK>1)
 		{
 			w -= a(0) * Kbasis[0];
 			b(1) = norm(w);
-//			cout << "b(1)=" << b(1) << endl;
 			Kbasis[1] = w/b(1);
 			reorthogonalize(0);
 		}
@@ -440,6 +443,8 @@ setup_ab (const Hamiltonian &H, const VectorType &u)
 				invSubspace = i; // inv. subspace of size i
 				stat.last_invSubspace = invSubspace; // for statistics
 				dimK = invSubspace; // set dimK to inv. subspace size
+				next_b = b(dimK); // save last b
+				next_K = Kbasis[dimK]; // save last K-vector
 				a.conservativeResize(dimK);
 				b.conservativeResize(dimK);
 				Kbasis.resize(dimK);
@@ -458,6 +463,9 @@ setup_ab (const Hamiltonian &H, const VectorType &u)
 		{
 			HxV(H,Kbasis[dimK-1],w); ++stat.N_mvm;
 			a(dimK-1) = isReal(dot(w,Kbasis[dimK-1]));
+			w -= a(dimK-1)*Kbasis[dimK-1] + b(dimK-1)*Kbasis[dimK-2];
+			next_b = norm(w);
+			next_K = w/next_b;
 		}
 //		Scalar ortho_test;
 //		for (int i=0; i<dimK; ++i)
@@ -514,17 +522,44 @@ setup_ab (const Hamiltonian &H, const VectorType &u)
 
 template<typename Hamiltonian, typename VectorType, typename Scalar>
 void LanczosSolver<Hamiltonian,VectorType,Scalar>::
-Krylov_diagonalize()
+calc_next_ab (const Hamiltonian &H)
 {
-	MatrixXd Htridiag(dimK,dimK);
-	Htridiag.setZero();
-	Htridiag.diagonal() = a;
+	++dimK;
+	a.conservativeResize(dimK);
+	b.conservativeResize(dimK);
+	b(dimK-1) = next_b;
+	Kbasis.resize(dimK);
+	Kbasis[dimK-1] = next_K;
+	reorthogonalize(dimK-2);
+	
+	VectorType w;
+	HxV(H,Kbasis[dimK-1],w); ++stat.N_mvm;
+	a(dimK-1) = isReal(dot(w,Kbasis[dimK-1]));
+	w -= a(dimK-1)*Kbasis[dimK-1] + b(dimK-1)*Kbasis[dimK-2];
+	next_b = norm(w);
+	next_K = w/next_b;
+}
+
+template<typename Hamiltonian, typename VectorType, typename Scalar>
+MatrixXd LanczosSolver<Hamiltonian,VectorType,Scalar>::
+Htridiag()
+{
+	MatrixXd Mout(dimK,dimK);
+	Mout.setZero();
+	Mout.diagonal() = a;
 	if (dimK>1)
 	{
-		Htridiag.diagonal<1>()  = b.tail(dimK-1);
-		Htridiag.diagonal<-1>() = b.tail(dimK-1);
+		Mout.diagonal<1>()  = b.tail(dimK-1);
+		Mout.diagonal<-1>() = b.tail(dimK-1);
 	}
-	KrylovSolver.compute(Htridiag);
+	return Mout;
+}
+
+template<typename Hamiltonian, typename VectorType, typename Scalar>
+void LanczosSolver<Hamiltonian,VectorType,Scalar>::
+Krylov_diagonalize()
+{
+	KrylovSolver.compute(Htridiag());
 }
 
 template<typename Hamiltonian, typename VectorType, typename Scalar>
