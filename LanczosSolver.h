@@ -70,7 +70,8 @@ public:
 	void ground (const Hamiltonian &H, Eigenstate<VectorType> &Vout, double eps_eigval=1e-7, double eps_coeff=1e-7, bool START_FROM_RANDOM=true);
 	void roof (const Hamiltonian &H, Eigenstate<VectorType> &Vout, double eps_eigval=1e-7, double eps_coeff=1e-7, bool START_FROM_RANDOM=true);
 	void edgeState (const Hamiltonian &H, Eigenstate<VectorType> &Vout, 
-	                LANCZOS::EDGE::OPTION EDGE_input, double eps_eigval=1e-7, double eps_coeff=1e-7, bool START_FROM_RANDOM=true);
+	                LANCZOS::EDGE::OPTION EDGE_input=LANCZOS::EDGE::GROUND,
+	                double eps_eigval=1e-7, double eps_coeff=1e-7, bool START_FROM_RANDOM=true);
 	
 	double Emin (const Hamiltonian &H, double eps_eigval=1e-7);
 	double Emax (const Hamiltonian &H, double eps_eigval=1e-7);
@@ -284,6 +285,7 @@ edgeState (const Hamiltonian &H, Eigenstate<VectorType> &Vout, LANCZOS::EDGE::OP
 	
 	while (err_coeff >= eps_coeff or err_eigval >= eps_eigval)
 	{
+//		calc_next_ab(H);
 		setup_ab(H,Vout.state);
 		Krylov_diagonalize();
 		edgeStateIteration(H,Vout.state);
