@@ -78,11 +78,11 @@ OrthPolyBase (const Hamiltonian &H, double padding_input)
 			#pragma omp critical
 			{
 				#ifdef _OPENMP
-				lout << "Emin, thread: " << omp_get_thread_num() << endl;
+//				lout << "Emin, thread: " << omp_get_thread_num() << endl;
 				#endif
 			}
 			Emin = Lutz.Emin(H);
-			lout << Lutz.info() << endl;
+//			lout << Lutz.info() << endl;
 		}
 		#ifndef ORTHPOLYBASE_DONT_USE_OPENMP
 		#pragma omp section
@@ -91,11 +91,11 @@ OrthPolyBase (const Hamiltonian &H, double padding_input)
 			#pragma omp critical
 			{
 				#ifdef _OPENMP
-				lout << "Emax, thread: " << omp_get_thread_num() << endl;
+//				lout << "Emax, thread: " << omp_get_thread_num() << endl;
 				#endif
 			}
 			Emax = Lucy.Emax(H);
-			lout << Lucy.info() << endl;
+//			lout << Lucy.info() << endl;
 		}
 	}
 	else

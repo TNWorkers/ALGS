@@ -8,7 +8,7 @@
 MatrixXcd exp (const MatrixXcd M)
 {
 	ComplexEigenSolver<MatrixXcd> Eugen(M);
-	return Eugen.eigenvectors() * Eugen.eigenvalues().array().exp().matrix().asDiagonal() * Eugen.eigenvectors().adjoint();
+	return Eugen.eigenvectors() * Eugen.eigenvalues().array().exp().matrix().asDiagonal() * Eugen.eigenvectors().inverse();
 }
 
 template<typename Hamiltonian, typename ComplexVectorType>
@@ -23,6 +23,8 @@ public:
 //	template<typename InitVectorType> void t_step (const Hamiltonian &H, const InitVectorType &Vin, ComplexVectorType &Vout, double dt);
 	void t_step (const Hamiltonian &H, const ComplexVectorType &Vin, ComplexVectorType &Vout, double dt);
 	void t_step (const Hamiltonian &H, ComplexVectorType &Vinout, double dt);
+	
+	void t_step_fixed (const Hamiltonian &H, const ComplexVectorType &Vin, ComplexVectorType &Vout, double dt, int dimK_input);
 	
 	inline double get_dist() {return dist;};
 	
@@ -113,10 +115,12 @@ calc_dist (double dt)
 {
 	int dimK = this->dimK;
 	
-//	MatrixXcd HtridiagExp1 = (-1.i*dt*this->Htridiag()).exp();
-//	MatrixXcd HtridiagExp2 = (-1.i*dt*0.5*this->Htridiag()).exp();
-	MatrixXcd HtridiagExp1 = exp(-1.i*dt*this->Htridiag());
-	MatrixXcd HtridiagExp2 = exp(-1.i*dt*0.5*this->Htridiag());
+	MatrixXcd Mtmp1 = -1.i*dt*this->Htridiag();
+	MatrixXcd HtridiagExp1 = (Mtmp1).exp();
+	MatrixXcd Mtmp2 = -1.i*dt*0.5*this->Htridiag();
+	MatrixXcd HtridiagExp2 = (Mtmp2).exp();
+//	MatrixXcd HtridiagExp1 = exp(-1.i*dt*this->Htridiag());
+//	MatrixXcd HtridiagExp2 = exp(-1.i*dt*0.5*this->Htridiag());
 	
 	return abs(dt) * abs(this->next_b) * (1./6.*abs(HtridiagExp1(dimK-1,0)) + 2./3.*abs(HtridiagExp2(dimK-1,0)));
 }
@@ -172,6 +176,29 @@ t_step (const Hamiltonian &H, const ComplexVectorType &Vin, ComplexVectorType &V
 	vK.setZero();
 	vK(0) = norm(Vin);
 //	this->project_in(Vin,vK);
+	KrylovTimeMangler(vK,dt);
+	this->project_out(vK,Vout);
+}
+
+template<typename Hamiltonian, typename ComplexVectorType>
+void LanczosPropagator<Hamiltonian,ComplexVectorType>::
+t_step_fixed (const Hamiltonian &H, const ComplexVectorType &Vin, ComplexVectorType &Vout, double dt, int dimK_input)
+{
+	tstep = dt;
+	this->setup_H(H);
+	this->setup_ab(H,Vin);
+	
+	for (int i=0; i<dimK_input-3; ++i)
+	{
+		this->calc_next_ab(H);
+	}
+	dist = calc_dist(dt);
+	
+	this->Krylov_diagonalize();
+	
+	VectorXcd vK(this->dimK);
+	vK.setZero();
+	vK(0) = norm(Vin);
 	KrylovTimeMangler(vK,dt);
 	this->project_out(vK,Vout);
 }
