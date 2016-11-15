@@ -16,7 +16,7 @@ class LanczosPropagator : public LanczosSolver<Hamiltonian,ComplexVectorType,com
 {
 public:
 	
-	LanczosPropagator (double tol_input=1e-9, int dimK_input=3);
+	LanczosPropagator (double tol_input=1e-9, int dimK_input=1);
 	
 	string info() const;
 	

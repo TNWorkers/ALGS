@@ -429,9 +429,14 @@ setup_ab (const Hamiltonian &H, const VectorType &u)
 		a(0) = isReal(dot(w,Kbasis[0]));
 		
 		// step: 1
-		if (dimK>1)
+		w -= a(0) * Kbasis[0];
+		if (dimK == 1)
 		{
-			w -= a(0) * Kbasis[0];
+			next_b = norm(w);
+			next_K = w/next_b;
+		}
+		else if (dimK>1)
+		{
 			b(1) = norm(w);
 			Kbasis[1] = w/b(1);
 			reorthogonalize(0);
