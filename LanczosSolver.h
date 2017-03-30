@@ -190,7 +190,7 @@ inline int LanczosSolver<Hamiltonian,VectorType,Scalar>::
 determine_dimK (size_t dimH_input) const
 {
 	if      (dimH==1)             {return 1;}
-	else if (dimH>1 and dimH<200) {return static_cast<int>(ceil(max(2.,0.4*dimH_input)));}
+	else if (dimH>1 and dimH<200) {return static_cast<int>(std::ceil(std::max(2.,0.4*dimH_input)));}
 	else                          {return 90;}
 }
 
@@ -275,7 +275,7 @@ edgeState (const Hamiltonian &H, Eigenstate<VectorType> &Vout, LANCZOS::EDGE::OP
 	int N_iter = 0;
 	double err_eigval = 1.;
 	double err_coeff  = 1.;
-	double eigval = numeric_limits<double>::infinity();
+	double eigval = std::numeric_limits<double>::infinity();
 	
 	if (START_FROM_RANDOM == true)
 	{
@@ -297,7 +297,7 @@ edgeState (const Hamiltonian &H, Eigenstate<VectorType> &Vout, LANCZOS::EDGE::OP
 			{
 				// If already close to groundstate, this test will give 0 and prevent an unnecessary second iteration.
 				double temp = sq_test(H,Vout.state);
-				if (temp <= 1e-14)
+				if (temp <= 1.e-14)
 				{
 					err_coeff = temp;
 					err_eigval = 0.;
@@ -308,7 +308,7 @@ edgeState (const Hamiltonian &H, Eigenstate<VectorType> &Vout, LANCZOS::EDGE::OP
 		}
 		else
 		{
-			err_eigval = fabs(eigval-KrylovSolver.eigenvalues()(eigval_index));
+			err_eigval = std::abs(eigval-KrylovSolver.eigenvalues()(eigval_index));
 			if (CHOSEN_CONVTEST == LANCZOS::CONVTEST::COEFFWISE)
 			{
 				err_coeff = infNorm(Vout.state,Vnew);
@@ -408,7 +408,7 @@ sq_test (const Hamiltonian &H, const VectorType &Vin)
 	VectorType Vtmp;
 	HxV(H,Vin,Vtmp); ++stat.N_mvm;
 	double sqrtVxHxHxV = norm(Vtmp); // sqrt(|<Psi|H^2|Psi>|)
-	double absVxHxV = fabs(dot(Vin,Vtmp)); // |<Psi|H|Psi>|
+	double absVxHxV = std::abs(dot(Vin,Vtmp)); // |<Psi|H|Psi>|
 	return sqrtVxHxHxV-absVxHxV;
 }
 
@@ -445,7 +445,7 @@ setup_ab (const Hamiltonian &H, const VectorType &u)
 		// steps: 2 to dimK-2
 		for (int i=1; i<dimK-1; ++i)
 		{
-			if (fabs(b(i)) < eps_invSubspace)
+			if (std::abs(b(i)) < eps_invSubspace)
 			{
 				invSubspace = i; // inv. subspace of size i
 				stat.last_invSubspace = invSubspace; // for statistics
@@ -661,7 +661,7 @@ set_eigval_index()
 	if (CHOSEN_EDGE == LANCZOS::EDGE::GROUND)
 	{
 		eigval_index = 0;
-	} 
+	}
 	else if (CHOSEN_EDGE == LANCZOS::EDGE::ROOF)
 	{
 		eigval_index = dimK-1;
