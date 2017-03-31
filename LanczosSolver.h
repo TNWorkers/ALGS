@@ -79,7 +79,7 @@ public:
 	//--------</ground or roof state>--------
 	
 	//--------<info>--------
-	virtual	string info() const;
+	virtual string info() const;
 	double calc_memory (const Hamiltonian &H, MEMUNIT memunit=GB) const;
 	int mvms() const {return stat.N_mvm;};
 	//--------</info>--------
@@ -112,7 +112,7 @@ protected:
 	int determine_dimK (size_t dimH_input) const;
 	void set_eigval_index();
 	double sq_test (const Hamiltonian &H, const VectorType &V);
-
+	
 	void edgeStateIteration (const Hamiltonian &H, VectorType &u_out);
 	
 	double next_b;
@@ -189,8 +189,8 @@ template<typename Hamiltonian, typename VectorType, typename Scalar>
 inline int LanczosSolver<Hamiltonian,VectorType,Scalar>::
 determine_dimK (std::size_t dimH_input) const
 {
-	if      (dimH==1)             {return 1;}
-	else if (dimH>1 and dimH<200) {return static_cast<int>(std::ceil(std::max(2.,0.4*dimH_input)));}
+	if      (dimH_input==1)             {return 1;}
+	else if (dimH_input>1 and dimH_input<200) {return static_cast<int>(std::ceil(std::max(2.,0.4*dimH_input)));}
 	else                          {return 90;}
 }
 
@@ -675,7 +675,7 @@ string LanczosSolver<Hamiltonian,VectorType,Scalar>::
 info() const
 {
 	stringstream ss;
-
+	
 	ss << infolabel << ":"
 	<< " dimH=" << dimH
 	<< ", dimK=" << dimK;
@@ -726,7 +726,7 @@ info() const
 	{
 		ss << ", breakoff after max.iterations";
 	}
-
+	
 	return ss.str();
 }
 
