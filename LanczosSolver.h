@@ -187,7 +187,7 @@ set_dimK (int dimK_input)
 
 template<typename Hamiltonian, typename VectorType, typename Scalar>
 inline int LanczosSolver<Hamiltonian,VectorType,Scalar>::
-determine_dimK (size_t dimH_input) const
+determine_dimK (std::size_t dimH_input) const
 {
 	if      (dimH==1)             {return 1;}
 	else if (dimH>1 and dimH<200) {return static_cast<int>(std::ceil(std::max(2.,0.4*dimH_input)));}
