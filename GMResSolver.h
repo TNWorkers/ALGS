@@ -14,7 +14,7 @@ public:
 	
 	GMResSolver (const MatrixType &A, const VectorType &b, VectorType &x, double tol=1e-14);
 	
-	void compute (const MatrixType &A, const VectorType &b, VectorType &x, double tol=1e-14);
+	void solve_linear (const MatrixType &A, const VectorType &b, VectorType &x, double tol=1e-14);
 	
 	void set_dimK (size_t dimK_input);
 	
@@ -23,7 +23,7 @@ public:
 private:
 	
 	size_t dimK, dimA;
-	double residual;
+	double residual = std::nan("1");
 	size_t N_iter;
 	
 	bool USER_HAS_FORCED_DIMK;
@@ -42,8 +42,11 @@ info() const
 	ss << "GMResSolver" << ":"
 	<< " dimA=" << dimA
 	<< ", dimK=" << dimK
-	<< ", iterations=" << N_iter
-	<< ", |A*x-b|(theor.)=" << residual;
+	<< ", iterations=" << N_iter;
+	if (N_iter == GMRES_MAX_ITERATIONS)
+	{
+		ss << ", breakoff after max.iterations";
+	}
 	
 	return ss.str();
 }
@@ -57,7 +60,7 @@ GMResSolver (const MatrixType &A, const VectorType &b, VectorType &x, double tol
 
 template<typename MatrixType, typename VectorType>
 void GMResSolver<MatrixType,VectorType>::
-compute (const MatrixType &A, const VectorType &b, VectorType &x, double tol)
+solve_linear (const MatrixType &A, const VectorType &b, VectorType &x, double tol)
 {
 	dimA = dim(A);
 	N_iter = 0;
@@ -66,11 +69,12 @@ compute (const MatrixType &A, const VectorType &b, VectorType &x, double tol)
 	{
 		if      (dimA==1)             {dimK=1;}
 		else if (dimA>1 and dimA<200) {dimK=static_cast<size_t>(ceil(max(2.,0.4*dimA)));}
-		else                          {dimK=90;}
+		else                          {dimK=100;}
 	}
 	
 	VectorType x0 = b;
-	setZero(x0);
+//	setZero(x0);
+	GaussianRandomVector<VectorType,double>::fill(dimA,x0);
 	
 	do
 	{
@@ -111,7 +115,7 @@ iteration (const MatrixType &A, const VectorType &b, const VectorType &x0, Vecto
 		HxV(A,Kbasis[j], Kbasis[j+1]);
 		for (size_t i=0; i<=j; ++i)
 		{
-			h(i,j) = dot(Kbasis[j+1],Kbasis[i]);
+			h(i,j) = dot(Kbasis[i],Kbasis[j+1]);
 			Kbasis[j+1] -= h(i,j) * Kbasis[i];
 		}
 		h(j+1,j) = norm(Kbasis[j+1]);
