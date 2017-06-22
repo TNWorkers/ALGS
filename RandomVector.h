@@ -14,21 +14,23 @@
 #include <random>
 #include <thread>
 
-template<typename Scalar> Scalar threadSafeRandUniform (double min, double max) {};
+template<typename Scalar> Scalar threadSafeRandUniform (double min, double max, bool SEED=false) {};
 template<typename Scalar> Scalar threadSafeRandNormal (double mean, double sigma) {};
 
 template<>
-double threadSafeRandUniform<double> (double min, double max)
+double threadSafeRandUniform<double> (double min, double max, bool SEED)
 {
 	static thread_local mt19937 generatorUniformReal(random_device{}());
+	if ( SEED ) { generatorUniformReal.seed(1); }
 	uniform_real_distribution<double> distribution(min, max);
 	return distribution(generatorUniformReal);
 }
 
 template<>
-complex<double> threadSafeRandUniform<complex<double> > (double min, double max)
+complex<double> threadSafeRandUniform<complex<double> > (double min, double max, bool SEED)
 {
 	static thread_local mt19937 generatorUniformComplex(random_device{}());
+	if ( SEED ) { generatorUniformComplex.seed(1); }
 	uniform_real_distribution<double> distribution(min, max);
 	return complex<double>(distribution(generatorUniformComplex),distribution(generatorUniformComplex));
 }
