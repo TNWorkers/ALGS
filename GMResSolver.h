@@ -42,7 +42,8 @@ info() const
 	ss << "GMResSolver" << ":"
 	<< " dimA=" << dimA
 	<< ", dimK=" << dimK
-	<< ", iterations=" << N_iter;
+	<< ", iterations=" << N_iter
+	<< ", res=" << residual;
 	if (N_iter == GMRES_MAX_ITERATIONS)
 	{
 		ss << ", breakoff after max.iterations";
@@ -82,6 +83,10 @@ solve_linear (const MatrixType &A, const VectorType &b, VectorType &x, double to
 		x0 = x;
 	}
 	while (residual>tol and N_iter<GMRES_MAX_ITERATIONS);
+	
+//	VectorType b_;
+//	HxV(A,x,b_);
+//	cout << "norm(A*b-x)=" << (b-b_).norm() << endl;
 }
 
 template<typename MatrixType, typename VectorType>
