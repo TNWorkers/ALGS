@@ -73,9 +73,9 @@ public:
 	                LANCZOS::EDGE::OPTION EDGE_input=LANCZOS::EDGE::GROUND,
 	                double eps_eigval=1e-7, double eps_coeff=1e-7, bool START_FROM_RANDOM=true);
 	
-	double Emin (const Hamiltonian &H, double eps_eigval=1e-7);
-	double Emax (const Hamiltonian &H, double eps_eigval=1e-7);
-	double edgeEigenvalue (const Hamiltonian &H, LANCZOS::EDGE::OPTION EDGE_input, double eps_eigval=1e-7);
+//	double Emin (const Hamiltonian &H, double eps_eigval=1e-7);
+//	double Emax (const Hamiltonian &H, double eps_eigval=1e-7);
+//	double edgeEigenvalue (const Hamiltonian &H, LANCZOS::EDGE::OPTION EDGE_input, double eps_eigval=1e-7);
 	//--------</ground or roof state>--------
 	
 	//--------<info>--------
@@ -108,7 +108,7 @@ protected:
 	bool USER_HAS_FORCED_DIMK;
 	LANCZOS::CONVTEST::OPTION CHOSEN_CONVTEST;
 	
-	void setup_H (const Hamiltonian &H);
+	void setup_H (const Hamiltonian &H, const VectorType &V);
 	int determine_dimK (size_t dimH_input) const;
 	void set_eigval_index();
 	double sq_test (const Hamiltonian &H, const VectorType &V);
@@ -196,9 +196,14 @@ determine_dimK (std::size_t dimH_input) const
 
 template<typename Hamiltonian, typename VectorType, typename Scalar>
 void LanczosSolver<Hamiltonian,VectorType,Scalar>::
-setup_H (const Hamiltonian &H)
+setup_H (const Hamiltonian &H, const VectorType &V)
 {
-	dimH = dim(H);
+	// vector space size should be calculable either from H or from V (else 0 is returned by dim function)
+	size_t try_dimH = dim(H);
+	size_t try_dimV = dim(V);
+	assert(try_dimH != 0 or try_dimV != 0);
+	dimH = max(try_dimH, try_dimV);
+	
 	invSubspace = 0;
 	
 	if (USER_HAS_FORCED_EFFICIENCY == false)
@@ -269,7 +274,7 @@ void LanczosSolver<Hamiltonian,VectorType,Scalar>::
 edgeState (const Hamiltonian &H, Eigenstate<VectorType> &Vout, LANCZOS::EDGE::OPTION EDGE_input, double eps_eigval, double eps_coeff, bool START_FROM_RANDOM)
 {
 	CHOSEN_EDGE = EDGE_input;
-	setup_H(H);
+	setup_H(H,Vout.state);
 	set_eigval_index();
 	
 	int N_iter = 0;
@@ -333,7 +338,8 @@ edgeState (const Hamiltonian &H, Eigenstate<VectorType> &Vout, LANCZOS::EDGE::OP
 		
 //		cout << setprecision(16) << N_iter << " err_eigval=" << err_eigval << " err_coeff=" << err_coeff << " eigval=" << eigval << endl;
 //		cout << std::setprecision(16) << err_coeff << "\t" << sq_test(H,Vout.state) << "\t" << norm(H) << endl;
-//		cout << "eigval=" << eigval << endl;
+//		VectorType Vtmp = -Vnew;
+//		cout << "alt.infNorm=" << infNorm(Vout.state,Vtmp) << endl;
 		
 		++N_iter;
 		if (N_iter == LANCZOS_MAX_ITERATIONS)
@@ -347,59 +353,59 @@ edgeState (const Hamiltonian &H, Eigenstate<VectorType> &Vout, LANCZOS::EDGE::OP
 	Vout.energy = eigval;
 }
 
-template<typename Hamiltonian, typename VectorType, typename Scalar>
-double LanczosSolver<Hamiltonian,VectorType,Scalar>::
-edgeEigenvalue (const Hamiltonian &H, LANCZOS::EDGE::OPTION EDGE_input, double eps_eigval)
-{
-	CHOSEN_EDGE = EDGE_input;
-	setup_H(H);
-	set_eigval_index();
-	
-	int N_iter = 0;
-	double err_eigval = 1.;
-	double err_coeff  = 1.;
-	double eigval = std::numeric_limits<double>::infinity();
-	
-	VectorType Vtmp;
-	GaussianRandomVector<VectorType,Scalar>::fill(dimH,Vtmp);
-	
-	while (err_eigval >= eps_eigval)
-	{
-		setup_ab(H,Vtmp);
-		Krylov_diagonalize();
-		edgeStateIteration(H,Vtmp);
-		
-		if (N_iter==0 and sq_test(H,Vtmp)==0.)
-		{
-			err_eigval = 0.;
-		}
-		else
-		{
-			err_eigval = fabs(eigval-KrylovSolver.eigenvalues()(eigval_index));
-		}
-		
-		eigval = KrylovSolver.eigenvalues()(eigval_index);
-		
-		// restart if eigval=nan, happens for small matrices sometimes (?)
-		if (std::isnan(eigval))
-		{
-			++stat.N_restarts;
-			GaussianRandomVector<VectorType,Scalar>::fill(dimH,Vtmp);
-			err_eigval = 1.;
-			err_coeff  = 1.;
-		}
-		
-		++N_iter;
-		if (N_iter == LANCZOS_MAX_ITERATIONS)
-		{
-			stat.BREAK = true;
-			break;
-		}
-	}
-	
-	stat.last_N_iter = N_iter;
-	return eigval;
-}
+//template<typename Hamiltonian, typename VectorType, typename Scalar>
+//double LanczosSolver<Hamiltonian,VectorType,Scalar>::
+//edgeEigenvalue (const Hamiltonian &H, LANCZOS::EDGE::OPTION EDGE_input, double eps_eigval)
+//{
+//	CHOSEN_EDGE = EDGE_input;
+//	setup_H(H);
+//	set_eigval_index();
+//	
+//	int N_iter = 0;
+//	double err_eigval = 1.;
+//	double err_coeff  = 1.;
+//	double eigval = std::numeric_limits<double>::infinity();
+//	
+//	VectorType Vtmp;
+//	GaussianRandomVector<VectorType,Scalar>::fill(dimH,Vtmp);
+//	
+//	while (err_eigval >= eps_eigval)
+//	{
+//		setup_ab(H,Vtmp);
+//		Krylov_diagonalize();
+//		edgeStateIteration(H,Vtmp);
+//		
+//		if (N_iter==0 and sq_test(H,Vtmp)==0.)
+//		{
+//			err_eigval = 0.;
+//		}
+//		else
+//		{
+//			err_eigval = fabs(eigval-KrylovSolver.eigenvalues()(eigval_index));
+//		}
+//		
+//		eigval = KrylovSolver.eigenvalues()(eigval_index);
+//		
+//		// restart if eigval=nan, happens for small matrices sometimes (?)
+//		if (std::isnan(eigval))
+//		{
+//			++stat.N_restarts;
+//			GaussianRandomVector<VectorType,Scalar>::fill(dimH,Vtmp);
+//			err_eigval = 1.;
+//			err_coeff  = 1.;
+//		}
+//		
+//		++N_iter;
+//		if (N_iter == LANCZOS_MAX_ITERATIONS)
+//		{
+//			stat.BREAK = true;
+//			break;
+//		}
+//	}
+//	
+//	stat.last_N_iter = N_iter;
+//	return eigval;
+//}
 
 template<typename Hamiltonian, typename VectorType, typename Scalar>
 double LanczosSolver<Hamiltonian,VectorType,Scalar>::
@@ -626,19 +632,19 @@ edgeStateIteration (const Hamiltonian &H, VectorType &u_out)
 	}
 }
 
-template<typename Hamiltonian, typename VectorType, typename Scalar>
-inline double LanczosSolver<Hamiltonian,VectorType,Scalar>::
-Emin (const Hamiltonian &H, double eps_eigval)
-{
-	return edgeEigenvalue(H, LANCZOS::EDGE::GROUND, eps_eigval);
-}
+//template<typename Hamiltonian, typename VectorType, typename Scalar>
+//inline double LanczosSolver<Hamiltonian,VectorType,Scalar>::
+//Emin (const Hamiltonian &H, double eps_eigval)
+//{
+//	return edgeEigenvalue(H, LANCZOS::EDGE::GROUND, eps_eigval);
+//}
 
-template<typename Hamiltonian, typename VectorType, typename Scalar>
-inline double LanczosSolver<Hamiltonian,VectorType,Scalar>::
-Emax (const Hamiltonian &H, double eps_eigval)
-{
-	return edgeEigenvalue(H, LANCZOS::EDGE::ROOF, eps_eigval);
-}
+//template<typename Hamiltonian, typename VectorType, typename Scalar>
+//inline double LanczosSolver<Hamiltonian,VectorType,Scalar>::
+//Emax (const Hamiltonian &H, double eps_eigval)
+//{
+//	return edgeEigenvalue(H, LANCZOS::EDGE::ROOF, eps_eigval);
+//}
 
 template<typename Hamiltonian, typename VectorType, typename Scalar>
 inline void LanczosSolver<Hamiltonian,VectorType,Scalar>::

@@ -2,8 +2,10 @@
 #define GENERICArnoldiSolver
 
 #ifndef ARNOLDI_MAX_ITERATIONS
-#define ARNOLDI_MAX_ITERATIONS 1e3
+#define ARNOLDI_MAX_ITERATIONS 1e2
 #endif
+
+#include "RandomVector.h"
 
 template<typename MatrixType, typename ComplexVectorType>
 class ArnoldiSolver

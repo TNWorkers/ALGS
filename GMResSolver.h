@@ -127,6 +127,8 @@ iteration (const MatrixType &A, const VectorType &b, const VectorType &x0, Vecto
 		Kbasis[j+1] /= h(j+1,j);
 	}
 	
+//	cout << h << endl << endl;
+	
 	// solve linear system in Krylov space
 	VectorXd y = h.jacobiSvd(ComputeThinU|ComputeThinV).solve(beta*VectorXd::Unit(dimK+1,0));
 	

@@ -159,7 +159,7 @@ t_step (const Hamiltonian &H, const ComplexVectorType &Vin, ComplexVectorType &V
 //	}
 	
 	tstep = dt;
-	this->setup_H(H);
+	this->setup_H(H,Vin);
 	this->setup_ab(H,Vin);
 	
 //	cout << "dimK=" << this->dimK << ", error: " << calc_dist(dt) << "\t" << tol << endl;
@@ -185,7 +185,7 @@ void LanczosPropagator<Hamiltonian,ComplexVectorType>::
 t_step_fixed (const Hamiltonian &H, const ComplexVectorType &Vin, ComplexVectorType &Vout, double dt, int dimK_input)
 {
 	tstep = dt;
-	this->setup_H(H);
+	this->setup_H(H,Vin);
 	this->setup_ab(H,Vin);
 	
 	for (int i=0; i<dimK_input-3; ++i)
