@@ -1,6 +1,10 @@
 #ifndef ORTHPOLYGREEN1DIM
 #define ORTHPOLYGREEN1DIM
 
+#ifdef USE_HDF5_STORAGE
+#include "HDF5Interface.h"
+#endif
+
 #include "OrthPolyBase.h"
 #include "IntervalIterator.h"
 #include "MemCalc.h"
@@ -394,7 +398,7 @@ save_ImAB (int Msave, string datfile, double Eoffset, bool REVERSE, KERNEL_CHOIC
 	{
 		ImABspectrum(Eit_.index(),0) = *Eit_;
 	}
-	
+
 	#pragma omp parallel for
 	for (size_t i=0; i<Asize; ++i)
 	{
@@ -404,7 +408,14 @@ save_ImAB (int Msave, string datfile, double Eoffset, bool REVERSE, KERNEL_CHOIC
 			ImABspectrum(Eit.index(),i+1) = evaluate_ImAB(i, *Eit, Msave, Eoffset, REVERSE, KERNEL);
 		}
 	}
-	
+
+	//save to HDF5 file if desired
+    #ifdef USE_HDF5_STORAGE
+	HDF5Interface target(datfile+".h5",FILE_ACCESS_MODE::WRITE);
+	target.save_matrix(ImABspectrum,"ssf");
+	target.close();
+	#endif
+	//save to standard text file
 	ofstream datfiler(datfile);
 	datfiler << ImABspectrum << endl;
 	datfiler.close();
