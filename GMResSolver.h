@@ -5,7 +5,6 @@
 #define GMRES_MAX_ITERATIONS 1e2
 #endif
 
-
 template<typename MatrixType, typename VectorType>
 class GMResSolver
 {
