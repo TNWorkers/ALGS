@@ -125,19 +125,21 @@ template<typename Hamiltonian, typename VectorType>
 inline double OrthPolyBase<Hamiltonian,VectorType>::
 kernel (int n, int N, KERNEL_CHOICE KERNEL_input)
 {
+	double out = 0.;
 	if (KERNEL_input == JACKSON)
 	{
 		double k = M_PI/(N+1.);
-		return ((N-n+1.)*cos(n*k)+sin(n*k)/tan(k))/(N+1.);
+		out = ((N-n+1.)*cos(n*k)+sin(n*k)/tan(k))/(N+1.);
 	}
 	else if (KERNEL_input == LORENTZ)
 	{
-		return sinh(4.*(1.-static_cast<double>(n)/N))/sinh(4.);
+		out = sinh(4.*(1.-static_cast<double>(n)/N))/sinh(4.);
 	}
 	else if (KERNEL_input == NOKERNEL)
 	{
-		return 1.;
+		out = 1.;
 	}
+	return out;
 }
 
 template<typename Hamiltonian, typename VectorType>
