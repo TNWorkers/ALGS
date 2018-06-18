@@ -125,7 +125,11 @@ template<typename Hamiltonian, typename VectorType>
 inline double OrthPolyBase<Hamiltonian,VectorType>::
 kernel (int n, int N, KERNEL_CHOICE KERNEL_input)
 {
+<<<<<<< HEAD
 	double out = 0.;
+=======
+	double out;
+>>>>>>> 01cafe526944fa0eb17f0172103c03a9c34cac17
 	if (KERNEL_input == JACKSON)
 	{
 		double k = M_PI/(N+1.);
