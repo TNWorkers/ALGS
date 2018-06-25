@@ -20,11 +20,14 @@ public:
 	
 	string info() const;
 	
+	size_t get_Niter() const {return N_iterations;};
+	size_t get_dimK()  const {return dimK;};
+	
 private:
 	
 	size_t dimK, dimA;
 	double residual = std::nan("1");
-	size_t N_iter;
+	size_t N_iterations;
 	
 	bool USER_HAS_FORCED_DIMK;
 	
@@ -42,9 +45,9 @@ info() const
 	ss << "GMResSolver" << ":"
 	<< " dimA=" << dimA
 	<< ", dimK=" << dimK
-	<< ", iterations=" << N_iter
+	<< ", iterations=" << N_iterations
 	<< ", res=" << residual;
-	if (N_iter == GMRES_MAX_ITERATIONS)
+	if (N_iterations == GMRES_MAX_ITERATIONS)
 	{
 		ss << ", breakoff after max.iterations";
 	}
@@ -64,7 +67,7 @@ void GMResSolver<MatrixType,VectorType>::
 solve_linear (const MatrixType &A, const VectorType &b, VectorType &x, double tol)
 {
 	dimA = dim(A);
-	N_iter = 0;
+	N_iterations = 0;
 	
 	if (!USER_HAS_FORCED_DIMK)
 	{
@@ -79,10 +82,10 @@ solve_linear (const MatrixType &A, const VectorType &b, VectorType &x, double to
 	
 	do
 	{
-		iteration(A,b,x0,x); ++N_iter;
+		iteration(A,b,x0,x); ++N_iterations;
 		x0 = x;
 	}
-	while (residual>tol and N_iter<GMRES_MAX_ITERATIONS);
+	while (residual>tol and N_iterations<GMRES_MAX_ITERATIONS);
 	
 //	VectorType b_;
 //	HxV(A,x,b_);

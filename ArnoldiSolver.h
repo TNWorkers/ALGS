@@ -7,16 +7,16 @@
 
 #include "RandomVector.h"
 
-template<typename MatrixType, typename ComplexVectorType>
+template<typename MatrixType, typename VectorType>
 class ArnoldiSolver
 {
 public:
 	
 	ArnoldiSolver(){};
 	
-	ArnoldiSolver (const MatrixType &A, ComplexVectorType &x, complex<double> &lambda, double tol=1e-14);
+	ArnoldiSolver (const MatrixType &A, VectorType &x, complex<double> &lambda, double tol=1e-14);
 	
-	void calc_dominant (const MatrixType &A, ComplexVectorType &x, complex<double> &lambda, double tol=1e-14);
+	void calc_dominant (const MatrixType &A, VectorType &x, complex<double> &lambda, double tol=1e-14);
 	
 	void set_dimK (size_t dimK_input);
 	
@@ -30,13 +30,13 @@ private:
 	
 	bool USER_HAS_FORCED_DIMK;
 	
-	vector<ComplexVectorType> Kbasis;
+	vector<VectorType> Kbasis;
 	
-	void iteration (const MatrixType &A, const ComplexVectorType &x0, ComplexVectorType &x, complex<double> &lambda);
+	void iteration (const MatrixType &A, const VectorType &x0, VectorType &x, complex<double> &lambda);
 };
 
-template<typename MatrixType, typename ComplexVectorType>
-string ArnoldiSolver<MatrixType,ComplexVectorType>::
+template<typename MatrixType, typename VectorType>
+string ArnoldiSolver<MatrixType,VectorType>::
 info() const
 {
 	stringstream ss;
@@ -54,24 +54,24 @@ info() const
 	return ss.str();
 }
 
-template<typename MatrixType, typename ComplexVectorType>
-ArnoldiSolver<MatrixType,ComplexVectorType>::
-ArnoldiSolver (const MatrixType &A, ComplexVectorType &x, complex<double> &lambda, double tol)
+template<typename MatrixType, typename VectorType>
+ArnoldiSolver<MatrixType,VectorType>::
+ArnoldiSolver (const MatrixType &A, VectorType &x, complex<double> &lambda, double tol)
 {
 	calc_dominant(A,x,lambda,tol);
 }
 
-template<typename MatrixType, typename ComplexVectorType>
-void ArnoldiSolver<MatrixType,ComplexVectorType>::
+template<typename MatrixType, typename VectorType>
+void ArnoldiSolver<MatrixType,VectorType>::
 set_dimK (size_t dimK_input)
 {
 	dimK = dimK_input;
 	USER_HAS_FORCED_DIMK = true;
 }
 
-template<typename MatrixType, typename ComplexVectorType>
-void ArnoldiSolver<MatrixType,ComplexVectorType>::
-calc_dominant (const MatrixType &A, ComplexVectorType &x, complex<double> &lambda, double tol)
+template<typename MatrixType, typename VectorType>
+void ArnoldiSolver<MatrixType,VectorType>::
+calc_dominant (const MatrixType &A, VectorType &x, complex<double> &lambda, double tol)
 {
 	dimA = dim(A);
 	N_iter = 0;
@@ -83,8 +83,8 @@ calc_dominant (const MatrixType &A, ComplexVectorType &x, complex<double> &lambd
 		else                          {dimK=100;}
 	}
 	
-	ComplexVectorType x0 = x;
-	GaussianRandomVector<ComplexVectorType,complex<double> >::fill(dimA,x0);
+	VectorType x0 = x;
+	GaussianRandomVector<VectorType,complex<double> >::fill(dimA,x0);
 	
 	complex<double> lambda_old = complex<double>(1e3,1e3);
 	
@@ -98,9 +98,9 @@ calc_dominant (const MatrixType &A, ComplexVectorType &x, complex<double> &lambd
 	while (error>tol and N_iter<ARNOLDI_MAX_ITERATIONS);
 }
 
-template<typename MatrixType, typename ComplexVectorType>
-void ArnoldiSolver<MatrixType,ComplexVectorType>::
-iteration (const MatrixType &A, const ComplexVectorType &x0, ComplexVectorType &x, complex<double> &lambda)
+template<typename MatrixType, typename VectorType>
+void ArnoldiSolver<MatrixType,VectorType>::
+iteration (const MatrixType &A, const VectorType &x0, VectorType &x, complex<double> &lambda)
 {
 	Kbasis.clear();
 	Kbasis.resize(dimK+1);
@@ -122,6 +122,10 @@ iteration (const MatrixType &A, const ComplexVectorType &x0, ComplexVectorType &
 		h(j+1,j) = norm(Kbasis[j+1]);
 		Kbasis[j+1] /= h(j+1,j);
 	}
+	
+//	cout << endl;
+//	cout << h.topRows(dimK) << endl;
+//	cout << endl;
 	
 	// calculate dominant eigenvector within the Krylov space
 	ComplexEigenSolver<MatrixXcd> Eugen(h.topRows(dimK));
