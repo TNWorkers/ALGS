@@ -25,8 +25,9 @@ public:
 	
 private:
 	
-	size_t dimK, dimA;
+	size_t dimK, dimA, dimKc;
 	double residual = std::nan("1");
+	double tol;
 	size_t N_iterations;
 	
 	bool USER_HAS_FORCED_DIMK;
@@ -44,9 +45,10 @@ info() const
 	
 	ss << "GMResSolver" << ":"
 	<< " dimA=" << dimA
-	<< ", dimK=" << dimK
+	<< ", dimKmax=" << dimK
+	<< ", dimK=" << dimKc
 	<< ", iterations=" << N_iterations
-	<< ", res=" << residual;
+	<< ", error=" << residual;
 	if (N_iterations == GMRES_MAX_ITERATIONS)
 	{
 		ss << ", breakoff after max.iterations";
@@ -57,16 +59,21 @@ info() const
 
 template<typename MatrixType, typename VectorType>
 GMResSolver<MatrixType,VectorType>::
-GMResSolver (const MatrixType &A, const VectorType &b, VectorType &x, double tol)
+GMResSolver (const MatrixType &A, const VectorType &b, VectorType &x, double tol_input)
 {
 	solve(A,b,x,tol);
 }
 
 template<typename MatrixType, typename VectorType>
 void GMResSolver<MatrixType,VectorType>::
-solve_linear (const MatrixType &A, const VectorType &b, VectorType &x, double tol)
+solve_linear (const MatrixType &A, const VectorType &b, VectorType &x, double tol_input)
 {
-	dimA = dim(A);
+	tol = tol_input;
+	size_t try_dimA = dim(A);
+	size_t try_dimb = dim(b);
+	assert(try_dimA != 0 or try_dimb != 0);
+	dimA = max(try_dimA, try_dimb);
+	
 	N_iterations = 0;
 	
 	if (!USER_HAS_FORCED_DIMK)
@@ -77,8 +84,8 @@ solve_linear (const MatrixType &A, const VectorType &b, VectorType &x, double to
 	}
 	
 	VectorType x0 = b;
-//	setZero(x0);
-	GaussianRandomVector<VectorType,double>::fill(dimA,x0);
+	setZero(x0);
+//	GaussianRandomVector<VectorType,double>::fill(dimA,x0);
 	
 	do
 	{
@@ -86,10 +93,11 @@ solve_linear (const MatrixType &A, const VectorType &b, VectorType &x, double to
 		x0 = x;
 	}
 	while (residual>tol and N_iterations<GMRES_MAX_ITERATIONS);
-	
-//	VectorType b_;
-//	HxV(A,x,b_);
-//	cout << "norm(A*b-x)=" << (b-b_).norm() << endl;
+//	
+//	VectorType c;
+//	HxV(A,x,c);
+//	c -= b;
+//	cout << "norm(A*b-x)=" << norm(c) << endl;
 }
 
 template<typename MatrixType, typename VectorType>
@@ -99,6 +107,50 @@ set_dimK (size_t dimK_input)
 	dimK = dimK_input;
 	USER_HAS_FORCED_DIMK = true;
 }
+
+//template<typename MatrixType, typename VectorType>
+//void GMResSolver<MatrixType,VectorType>::
+//iteration (const MatrixType &A, const VectorType &b, const VectorType &x0, VectorType &x)
+//{
+//	VectorType r0;
+//	HxV(A,x0, r0);
+//	r0 *= -1.;
+//	r0 += b;
+//	double beta = norm(r0);
+//	
+//	Kbasis.clear();
+//	Kbasis.resize(dimK+1);
+//	Kbasis[0] = r0 / beta;
+//	
+//	// overlap matrix
+//	MatrixXd h(dimK+1,dimK); h.setZero();
+//	
+//	// Arnoldi construction of an orthogonal Krylov space basis
+//	for (size_t j=0; j<dimK; ++j)
+//	{
+//		HxV(A,Kbasis[j], Kbasis[j+1]);
+//		for (size_t i=0; i<=j; ++i)
+//		{
+//			h(i,j) = dot(Kbasis[i],Kbasis[j+1]);
+//			Kbasis[j+1] -= h(i,j) * Kbasis[i];
+//		}
+//		h(j+1,j) = norm(Kbasis[j+1]);
+//		Kbasis[j+1] /= h(j+1,j);
+//	}
+//	
+//	// solve linear system in Krylov space
+//	VectorXd y = h.jacobiSvd(ComputeThinU|ComputeThinV).solve(beta*VectorXd::Unit(dimK+1,0));
+//	
+//	// a posteriori residual calculation
+//	residual = h(dimK,dimK-1)*abs(y(dimK-1));
+//	
+//	// project out of Krylov space
+//	x = x0;
+//	for (size_t k=0; k<dimK; ++k)
+//	{
+//		x += y(k) * Kbasis[k];
+//	}
+//}
 
 template<typename MatrixType, typename VectorType>
 void GMResSolver<MatrixType,VectorType>::
@@ -117,6 +169,9 @@ iteration (const MatrixType &A, const VectorType &b, const VectorType &x0, Vecto
 	// overlap matrix
 	MatrixXd h(dimK+1,dimK); h.setZero();
 	
+	dimKc = 1; // current Krylov dimension
+	VectorXd y;
+	
 	// Arnoldi construction of an orthogonal Krylov space basis
 	for (size_t j=0; j<dimK; ++j)
 	{
@@ -128,19 +183,24 @@ iteration (const MatrixType &A, const VectorType &b, const VectorType &x0, Vecto
 		}
 		h(j+1,j) = norm(Kbasis[j+1]);
 		Kbasis[j+1] /= h(j+1,j);
+		
+		dimKc = j+1;
+		
+		// solve linear system in Krylov space
+		y = h.topLeftCorner(dimKc+1,dimKc).jacobiSvd(ComputeThinU|ComputeThinV).solve(beta*VectorXd::Unit(dimKc+1,0));
+		
+		// a posteriori residual calculation
+		residual = h(dimKc,dimKc-1)*abs(y(dimKc-1));
+		
+//		cout << h << endl;
+//		cout << "j=" << j << ", dimKc=" << dimKc << ", h(dimKc,dimKc-1)=" << h(dimKc,dimKc-1) << ", abs(y(dimKc-1))=" << abs(y(dimKc-1)) << ", residual=" << residual << endl;
+		
+		if (residual < tol) {break;}
 	}
-	
-//	cout << h << endl << endl;
-	
-	// solve linear system in Krylov space
-	VectorXd y = h.jacobiSvd(ComputeThinU|ComputeThinV).solve(beta*VectorXd::Unit(dimK+1,0));
-	
-	// a posteriori residual calculation
-	residual = h(dimK,dimK-1)*abs(y(dimK-1));
 	
 	// project out of Krylov space
 	x = x0;
-	for (size_t k=0; k<dimK; ++k)
+	for (size_t k=0; k<dimKc; ++k)
 	{
 		x += y(k) * Kbasis[k];
 	}

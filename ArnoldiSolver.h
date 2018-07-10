@@ -73,7 +73,11 @@ template<typename MatrixType, typename VectorType>
 void ArnoldiSolver<MatrixType,VectorType>::
 calc_dominant (const MatrixType &A, VectorType &x, complex<double> &lambda, double tol)
 {
-	dimA = dim(A);
+	size_t try_dimA = dim(A);
+	size_t try_dimx = dim(x);
+	assert(try_dimA != 0 or try_dimx != 0);
+	dimA = max(try_dimA, try_dimx);
+	
 	N_iter = 0;
 	
 	if (!USER_HAS_FORCED_DIMK)
@@ -122,10 +126,6 @@ iteration (const MatrixType &A, const VectorType &x0, VectorType &x, complex<dou
 		h(j+1,j) = norm(Kbasis[j+1]);
 		Kbasis[j+1] /= h(j+1,j);
 	}
-	
-//	cout << endl;
-//	cout << h.topRows(dimK) << endl;
-//	cout << endl;
 	
 	// calculate dominant eigenvector within the Krylov space
 	ComplexEigenSolver<MatrixXcd> Eugen(h.topRows(dimK));
