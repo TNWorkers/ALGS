@@ -2,7 +2,7 @@
 #define GENERICGMRESSOLVER
 
 #ifndef GMRES_MAX_ITERATIONS
-#define GMRES_MAX_ITERATIONS 1e2
+#define GMRES_MAX_ITERATIONS 10
 #endif
 
 template<typename MatrixType, typename VectorType>
@@ -14,7 +14,7 @@ public:
 	
 	GMResSolver (const MatrixType &A, const VectorType &b, VectorType &x, double tol=1e-14);
 	
-	void solve_linear (const MatrixType &A, const VectorType &b, VectorType &x, double tol=1e-14);
+	void solve_linear (const MatrixType &A, const VectorType &b, VectorType &x, double tol=1e-14, bool START_FROM_RANDOM=true);
 	
 	void set_dimK (size_t dimK_input);
 	
@@ -66,7 +66,7 @@ GMResSolver (const MatrixType &A, const VectorType &b, VectorType &x, double tol
 
 template<typename MatrixType, typename VectorType>
 void GMResSolver<MatrixType,VectorType>::
-solve_linear (const MatrixType &A, const VectorType &b, VectorType &x, double tol_input)
+solve_linear (const MatrixType &A, const VectorType &b, VectorType &x, double tol_input, bool START_FROM_RANDOM)
 {
 	tol = tol_input;
 	size_t try_dimA = dim(A);
@@ -83,9 +83,17 @@ solve_linear (const MatrixType &A, const VectorType &b, VectorType &x, double to
 		else                          {dimK=100;}
 	}
 	
-	VectorType x0 = b;
-	setZero(x0);
-//	GaussianRandomVector<VectorType,double>::fill(dimA,x0);
+	VectorType x0;
+	if (START_FROM_RANDOM)
+	{
+		x0 = b;
+		GaussianRandomVector<VectorType,double>::fill(dimA,x0);
+	}
+	else
+	{
+		x0 = x;
+	}
+	//setZero(x0);
 	
 	do
 	{
