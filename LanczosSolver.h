@@ -9,11 +9,14 @@
 #define LANCZOS_MAX_ITERATIONS 1e2
 #endif
 
+/// \cond
 #include <math.h>
 #include <sstream>
 
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
+/// \endcond
+
 using namespace Eigen;
 
 #include "RandomVector.h"
