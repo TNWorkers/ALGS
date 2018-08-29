@@ -6,7 +6,7 @@
 #endif
 
 #ifndef LANCZOS_MAX_ITERATIONS
-#define LANCZOS_MAX_ITERATIONS 1e2
+#define LANCZOS_MAX_ITERATIONS 15
 #endif
 
 /// \cond
@@ -417,7 +417,7 @@ setup_ab (const Hamiltonian &H, const VectorType &u)
 			tau.diagonal<-1>() = b.segment(1,i);
 			SelfAdjointEigenSolver<MatrixXd> KrylovSolver(tau);
 			
-			double err_coeff = abs(b(i+1)) * abs(KrylovSolver.eigenvectors().col(eigval_index)(i)); // b(dimK) * |eigvec(dim_K)|
+			double err_coeff = abs(b(i+1)) * abs(KrylovSolver.eigenvectors().col(eigval_index)(i)); // b(dimK) * |eigvec(dim_K-1)|
 			double err_eigval = abs(eigval-KrylovSolver.eigenvalues()(eigval_index));
 			
 			eigval = KrylovSolver.eigenvalues()(eigval_index);
