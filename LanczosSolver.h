@@ -81,6 +81,9 @@ protected:
 	size_t dimK, dimH;
 	int eigval_index;
 	int invSubspace;
+	double eigval;
+	int convSubspace;
+	double eps_coeff, eps_eigval;
 	
 	LANCZOS::EFFICIENCY::OPTION CHOSEN_EFFICIENCY;
 	bool USER_HAS_FORCED_EFFICIENCY;
@@ -91,7 +94,7 @@ protected:
 	void setup_H (const Hamiltonian &H, const VectorType &V);
 	int determine_dimK (size_t dimH_input) const;
 	void set_eigval_index();
-	double sq_test (const Hamiltonian &H, const VectorType &V);
+	double sq_test (const Hamiltonian &H, const VectorType &V, const double &lambda);
 	
 	void edgeStateIteration (const Hamiltonian &H, VectorType &u_out);
 	
@@ -185,6 +188,7 @@ setup_H (const Hamiltonian &H, const VectorType &V)
 	dimH = max(try_dimH, try_dimV);
 	
 	invSubspace = 0;
+	convSubspace = 0;
 	
 	if (USER_HAS_FORCED_EFFICIENCY == false)
 	{
@@ -251,8 +255,11 @@ setup_H (const Hamiltonian &H, const VectorType &V)
 //--------------<core algorithm>--------------
 template<typename Hamiltonian, typename VectorType, typename Scalar>
 void LanczosSolver<Hamiltonian,VectorType,Scalar>::
-edgeState (const Hamiltonian &H, Eigenstate<VectorType> &Vout, LANCZOS::EDGE::OPTION EDGE_input, double eps_eigval, double eps_coeff, bool START_FROM_RANDOM)
+edgeState (const Hamiltonian &H, Eigenstate<VectorType> &Vout, LANCZOS::EDGE::OPTION EDGE_input, double eps_eigval_input, double eps_coeff_input, bool START_FROM_RANDOM)
 {
+	eps_coeff = eps_coeff_input;
+	eps_eigval = eps_eigval_input;
+	
 	CHOSEN_EDGE = EDGE_input;
 	setup_H(H,Vout.state);
 	set_eigval_index();
@@ -260,7 +267,7 @@ edgeState (const Hamiltonian &H, Eigenstate<VectorType> &Vout, LANCZOS::EDGE::OP
 	int N_iter = 0;
 	double err_eigval = 1.;
 	double err_coeff  = 1.;
-	double eigval = std::numeric_limits<double>::infinity();
+	eigval = std::numeric_limits<double>::infinity();
 	
 	if (START_FROM_RANDOM == true)
 	{
@@ -275,32 +282,32 @@ edgeState (const Hamiltonian &H, Eigenstate<VectorType> &Vout, LANCZOS::EDGE::OP
 		Krylov_diagonalize();
 		edgeStateIteration(H,Vout.state);
 		
-		if (N_iter==0)
+//		if (N_iter==0)
 //		if (N_iter==0 and sq_test(H,Vout.state)==0.)
-		{
-//			if (CHOSEN_CONVTEST==LANCZOS::CONVTEST::SQ_TEST)
-			{
-				// If already close to groundstate, this test will give 0 and prevent an unnecessary second iteration.
-				double temp = sq_test(H,Vout.state);
-				if (temp <= 1.e-14)
-				{
-					err_coeff = temp;
-					err_eigval = 0.;
-				}
-//				err_coeff = sq_test(H,Vout.state);
-//				err_eigval = 0.;
-			}
-		}
-		else
+//		{
+////			if (CHOSEN_CONVTEST==LANCZOS::CONVTEST::SQ_TEST)
+//			{
+//				// If already close to groundstate, this test will give 0 and prevent an unnecessary second iteration.
+//				double temp = sq_test(H,Vout.state);
+//				if (temp <= 1.e-14)
+//				{
+//					err_coeff = temp;
+//					err_eigval = 0.;
+//				}
+////				err_coeff = sq_test(H,Vout.state);
+////				err_eigval = 0.;
+//			}
+//		}
+//		else
 		{
 			err_eigval = std::abs(eigval-KrylovSolver.eigenvalues()(eigval_index));
-			if (CHOSEN_CONVTEST == LANCZOS::CONVTEST::COEFFWISE)
+//			if (CHOSEN_CONVTEST == LANCZOS::CONVTEST::COEFFWISE)
+//			{
+//				err_coeff = infNorm(Vout.state,Vnew);
+//			}
+//			else
 			{
-				err_coeff = infNorm(Vout.state,Vnew);
-			}
-			else
-			{
-				err_coeff = sq_test(H,Vout.state);
+				err_coeff = sq_test(H, Vout.state, KrylovSolver.eigenvalues()(eigval_index));
 			}
 		}
 		
@@ -333,69 +340,20 @@ edgeState (const Hamiltonian &H, Eigenstate<VectorType> &Vout, LANCZOS::EDGE::OP
 	Vout.energy = eigval;
 }
 
-//template<typename Hamiltonian, typename VectorType, typename Scalar>
-//double LanczosSolver<Hamiltonian,VectorType,Scalar>::
-//edgeEigenvalue (const Hamiltonian &H, LANCZOS::EDGE::OPTION EDGE_input, double eps_eigval)
-//{
-//	CHOSEN_EDGE = EDGE_input;
-//	setup_H(H);
-//	set_eigval_index();
-//	
-//	int N_iter = 0;
-//	double err_eigval = 1.;
-//	double err_coeff  = 1.;
-//	double eigval = std::numeric_limits<double>::infinity();
-//	
-//	VectorType Vtmp;
-//	GaussianRandomVector<VectorType,Scalar>::fill(dimH,Vtmp);
-//	
-//	while (err_eigval >= eps_eigval)
-//	{
-//		setup_ab(H,Vtmp);
-//		Krylov_diagonalize();
-//		edgeStateIteration(H,Vtmp);
-//		
-//		if (N_iter==0 and sq_test(H,Vtmp)==0.)
-//		{
-//			err_eigval = 0.;
-//		}
-//		else
-//		{
-//			err_eigval = fabs(eigval-KrylovSolver.eigenvalues()(eigval_index));
-//		}
-//		
-//		eigval = KrylovSolver.eigenvalues()(eigval_index);
-//		
-//		// restart if eigval=nan, happens for small matrices sometimes (?)
-//		if (std::isnan(eigval))
-//		{
-//			++stat.N_restarts;
-//			GaussianRandomVector<VectorType,Scalar>::fill(dimH,Vtmp);
-//			err_eigval = 1.;
-//			err_coeff  = 1.;
-//		}
-//		
-//		++N_iter;
-//		if (N_iter == LANCZOS_MAX_ITERATIONS)
-//		{
-//			stat.BREAK = true;
-//			break;
-//		}
-//	}
-//	
-//	stat.last_N_iter = N_iter;
-//	return eigval;
-//}
-
 template<typename Hamiltonian, typename VectorType, typename Scalar>
 double LanczosSolver<Hamiltonian,VectorType,Scalar>::
-sq_test (const Hamiltonian &H, const VectorType &Vin)
+sq_test (const Hamiltonian &H, const VectorType &Vin, const double &lambda)
 {
+//	VectorType Vtmp;
+//	HxV(H,Vin,Vtmp); ++stat.N_mvm;
+//	double sqrtVxHxHxV = norm(Vtmp); // sqrt(|<Psi|H^2|Psi>|)
+//	double absVxHxV = std::abs(dot(Vin,Vtmp)); // |<Psi|H|Psi>|
+//	return sqrtVxHxHxV-absVxHxV;
+	
 	VectorType Vtmp;
 	HxV(H,Vin,Vtmp); ++stat.N_mvm;
-	double sqrtVxHxHxV = norm(Vtmp); // sqrt(|<Psi|H^2|Psi>|)
-	double absVxHxV = std::abs(dot(Vin,Vtmp)); // |<Psi|H|Psi>|
-	return sqrtVxHxHxV-absVxHxV;
+	Vtmp -= lambda*Vin;
+	return norm(Vtmp);
 }
 
 template<typename Hamiltonian, typename VectorType, typename Scalar>
@@ -450,9 +408,35 @@ setup_ab (const Hamiltonian &H, const VectorType &u)
 			b(i+1) = norm(w);
 			Kbasis[i+1] = w/b(i+1);
 			reorthogonalize(i);
+			
+			// early exit:
+			MatrixXd tau(i+1,i+1);
+			tau.setZero();
+			tau.diagonal() = a.head(i+1); // a(0) ... a(dimK-1)
+			tau.diagonal<1>()  = b.segment(1,i); // b(1) ... b(dimK-1)
+			tau.diagonal<-1>() = b.segment(1,i);
+			SelfAdjointEigenSolver<MatrixXd> KrylovSolver(tau);
+			
+			double err_coeff = abs(b(i+1)) * abs(KrylovSolver.eigenvectors().col(eigval_index)(i)); // b(dimK) * |eigvec(dim_K)|
+			double err_eigval = abs(eigval-KrylovSolver.eigenvalues()(eigval_index));
+			
+			eigval = KrylovSolver.eigenvalues()(eigval_index);
+			
+			if (err_coeff < eps_coeff and err_eigval < eps_eigval)
+			{
+				convSubspace = i+1;
+				dimK = convSubspace;
+				next_b = b(dimK);
+				next_K = Kbasis[dimK];
+				a.conservativeResize(dimK);
+				b.conservativeResize(dimK);
+				Kbasis.resize(dimK);
+				set_eigval_index();
+				break;
+			}
 		}
 		// step: dimK-1
-		if (invSubspace==0 and dimK>1) // means no inv. subspace
+		if (invSubspace==0 and dimK>1 and convSubspace==0) // means no inv. subspace, no early convergence
 		{
 			HxV(H,Kbasis[dimK-1],w); ++stat.N_mvm;
 			a(dimK-1) = isReal(dot(w,Kbasis[dimK-1]));
@@ -566,7 +550,6 @@ edgeStateIteration (const Hamiltonian &H, VectorType &u_out)
 		for (int k=1; k<dimK; ++k)
 		{
 			u_out += c(k)*Kbasis[k];
-//			scale_add(c(k),Kbasis[k], u_out);
 		}
 	}
 	else if (CHOSEN_EFFICIENCY == LANCZOS::EFFICIENCY::MEMORY)
@@ -586,12 +569,10 @@ edgeStateIteration (const Hamiltonian &H, VectorType &u_out)
 		if (dimK>1)
 		{
 			w -= a(0)*u0;
-//			scale_subtract(a(0),u0, w);
 			u1 = w/b(1);
 			if (fabs(b(1))>eps_invSubspace) 
 			{
 				u_out += c(1)*u1;
-//				scale_add(c(1),u1, u_out);
 			}
 		}
 		
@@ -601,13 +582,9 @@ edgeStateIteration (const Hamiltonian &H, VectorType &u_out)
 			if (fabs(b(i))<eps_invSubspace) {break;}
 			HxV(H,u1,w); ++stat.N_mvm;
 			w -= a(i)*u1+b(i)*u0;
-//			scale_subtract(a(i),u1, w);
-//			scale_subtract(b(i),u0, w);
 			u0 = w/b(i+1); // u0 = u_next
-//			u0.swap(u1); // u1 = u_next
 			swap(u0,u1);
 			u_out += c(i+1)*u1;
-//			scale_add(c(i+1),u1, u_out);
 		}
 	}
 }
