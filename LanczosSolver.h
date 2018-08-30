@@ -382,8 +382,23 @@ setup_ab (const Hamiltonian &H, const VectorType &u)
 		else if (dimK>1)
 		{
 			b(1) = norm(w);
-			Kbasis[1] = w/b(1);
-			reorthogonalize(0);
+			if (std::abs(b(1)) < eps_invSubspace)
+			{
+				invSubspace = 1; // inv. subspace of size i
+				stat.last_invSubspace = invSubspace; // for statistics
+				dimK = invSubspace; // set dimK to inv. subspace size
+				next_b = b(dimK); // save last b
+				next_K = Kbasis[dimK]; // save last K-vector
+				a.conservativeResize(dimK);
+				b.conservativeResize(dimK);
+				Kbasis.resize(dimK);
+				set_eigval_index(); // reset eigval index
+			}
+			else
+			{
+				Kbasis[1] = w/b(1);
+				reorthogonalize(0);
+			}
 		}
 		
 		// steps: 2 to dimK-2
