@@ -432,6 +432,8 @@ setup_ab (const Hamiltonian &H, const VectorType &u)
 			tau.diagonal<-1>() = b.segment(1,i);
 			SelfAdjointEigenSolver<MatrixXd> KrylovSolver(tau);
 			
+			set_eigval_index();
+			eigval_index = (CHOSEN_EDGE == LANCZOS::EDGE::GROUND)? 0:i;
 			double err_coeff = abs(b(i+1)) * abs(KrylovSolver.eigenvectors().col(eigval_index)(i)); // b(dimK) * |eigvec(dim_K-1)|
 			double err_eigval = abs(eigval-KrylovSolver.eigenvalues()(eigval_index));
 			
