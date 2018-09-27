@@ -10,6 +10,7 @@
 #include "MemCalc.h"
 #include "LinearPrediction.h"
 #include "ChebyshevAbscissa.h"
+#include "Stopwatch.h" // from TOOLS
 
 template<typename Hamiltonian, typename VectorType, ORTHPOLY P=CHEBYSHEV>
 class OrthPolyGreen : public OrthPolyBase<Hamiltonian,VectorType>
@@ -116,6 +117,7 @@ template<typename Hamiltonian, typename VectorType, ORTHPOLY P>
 void OrthPolyGreen<Hamiltonian,VectorType,P>::
 calc_ImAA (Hamiltonian &H, const VectorType &AxV, int M_input, bool USE_IDENTITIES)
 {
+	Stopwatch<> TotalTimer;
 	M = M_input;
 	assert(M >= 2 and "Need at least 2 Chebyshev moments!");
 	if (USE_IDENTITIES == true)
@@ -182,6 +184,9 @@ calc_ImAA (Hamiltonian &H, const VectorType &AxV, int M_input, bool USE_IDENTITI
 			save(n+2);
 		}
 		//----</saving>----
+		
+		lout << TotalTimer.info("Chebyshev iteration total",false) << endl;
+		lout << endl;
 	}
 	
 	H.scale(this->a/OrthPoly<P>::C(range),this->b);
@@ -196,6 +201,7 @@ void OrthPolyGreen<Hamiltonian,VectorType,P>::
 calc_ImAB (Hamiltonian &H, const vector<VectorType> &AxV, const VectorType &BxV, int M_input)
 //calc_ImAB (Hamiltonian &H, StateIterator &AxV, const VectorType &BxV, int M_input)
 {
+	Stopwatch<> TotalTimer;
 	M = M_input;
 	Asize = AxV.size();
 	assert(M >= 2 and "Need at least 2 Chebyshev moments!");
@@ -256,6 +262,9 @@ calc_ImAB (Hamiltonian &H, const vector<VectorType> &AxV, const VectorType &BxV,
 			}
 		}
 		//----</save>----
+		
+		lout << TotalTimer.info("Chebyshev iteration total",false) << endl;
+		lout << endl;
 	}
 	H.scale(this->a/OrthPoly<P>::C(M),this->b);
 	
