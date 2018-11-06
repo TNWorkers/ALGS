@@ -139,7 +139,7 @@ calc_dist (double dt)
 //	}
 //	
 //	this->setup_H(H);
-//	this->setup_ab(H,Vin);
+//	this->iteration(H,Vin);
 //	this->Krylov_diagonalize();
 //	
 //	VectorXcd vK;
@@ -160,7 +160,7 @@ t_step (const Hamiltonian &H, const ComplexVectorType &Vin, ComplexVectorType &V
 	
 	tstep = dt;
 	this->setup_H(H,Vin);
-	this->setup_ab(H,Vin);
+	this->iteration(H,Vin);
 	
 //	cout << "dimK=" << this->dimK << ", error: " << calc_dist(dt) << "\t" << tol << endl;
 	while (calc_dist(dt) >= tol)
@@ -186,7 +186,7 @@ t_step_fixed (const Hamiltonian &H, const ComplexVectorType &Vin, ComplexVectorT
 {
 	tstep = dt;
 	this->setup_H(H,Vin);
-	this->setup_ab(H,Vin);
+	this->iteration(H,Vin);
 	
 	for (int i=0; i<dimK_input-3; ++i)
 	{

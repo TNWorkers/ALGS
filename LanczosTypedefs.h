@@ -6,7 +6,6 @@ struct LANCZOS
 	struct REORTHO    {enum OPTION {NO, FULL, SIMON, GRCAR};};
 	struct EFFICIENCY {enum OPTION {TIME, MEMORY};};
 	struct EDGE       {enum OPTION {GROUND, ROOF};};
-	struct CONVTEST   {enum OPTION {COEFFWISE, SQ_TEST, NORM_TEST};};
 	
 	struct STAT
 	{
