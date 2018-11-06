@@ -47,12 +47,12 @@ info() const
 	<< " dimA=" << dimA
 	<< ", dimKmax=" << dimK
 	<< ", dimK=" << dimKc
-	<< ", iterations=" << N_iterations
-	<< ", error=" << residual;
+	<< ", iterations=" << N_iterations;
 	if (N_iterations == GMRES_MAX_ITERATIONS)
 	{
 		ss << ", breakoff after max.iterations";
 	}
+	ss << ", error=" << residual;
 	
 	return ss.str();
 }
@@ -101,7 +101,8 @@ solve_linear (const MatrixType &A, const VectorType &b, VectorType &x, double to
 		x0 = x;
 	}
 	while (residual>tol and N_iterations<GMRES_MAX_ITERATIONS);
-//	
+	
+//	Test the solution:
 //	VectorType c;
 //	HxV(A,x,c);
 //	c -= b;
@@ -115,50 +116,6 @@ set_dimK (size_t dimK_input)
 	dimK = dimK_input;
 	USER_HAS_FORCED_DIMK = true;
 }
-
-//template<typename MatrixType, typename VectorType>
-//void GMResSolver<MatrixType,VectorType>::
-//iteration (const MatrixType &A, const VectorType &b, const VectorType &x0, VectorType &x)
-//{
-//	VectorType r0;
-//	HxV(A,x0, r0);
-//	r0 *= -1.;
-//	r0 += b;
-//	double beta = norm(r0);
-//	
-//	Kbasis.clear();
-//	Kbasis.resize(dimK+1);
-//	Kbasis[0] = r0 / beta;
-//	
-//	// overlap matrix
-//	MatrixXd h(dimK+1,dimK); h.setZero();
-//	
-//	// Arnoldi construction of an orthogonal Krylov space basis
-//	for (size_t j=0; j<dimK; ++j)
-//	{
-//		HxV(A,Kbasis[j], Kbasis[j+1]);
-//		for (size_t i=0; i<=j; ++i)
-//		{
-//			h(i,j) = dot(Kbasis[i],Kbasis[j+1]);
-//			Kbasis[j+1] -= h(i,j) * Kbasis[i];
-//		}
-//		h(j+1,j) = norm(Kbasis[j+1]);
-//		Kbasis[j+1] /= h(j+1,j);
-//	}
-//	
-//	// solve linear system in Krylov space
-//	VectorXd y = h.jacobiSvd(ComputeThinU|ComputeThinV).solve(beta*VectorXd::Unit(dimK+1,0));
-//	
-//	// a posteriori residual calculation
-//	residual = h(dimK,dimK-1)*abs(y(dimK-1));
-//	
-//	// project out of Krylov space
-//	x = x0;
-//	for (size_t k=0; k<dimK; ++k)
-//	{
-//		x += y(k) * Kbasis[k];
-//	}
-//}
 
 template<typename MatrixType, typename VectorType>
 void GMResSolver<MatrixType,VectorType>::
@@ -206,7 +163,7 @@ iteration (const MatrixType &A, const VectorType &b, const VectorType &x0, Vecto
 		if (residual < tol) {break;}
 	}
 	
-	// project out of Krylov space
+	// project out from Krylov space
 	x = x0;
 	for (size_t k=0; k<dimKc; ++k)
 	{

@@ -14,9 +14,9 @@ public:
 	
 	ArnoldiSolver(){};
 	
-	ArnoldiSolver (const MatrixType &A, VectorType &x, complex<double> &lambda, double tol=1e-14);
+	ArnoldiSolver (const MatrixType &A, VectorType &x, complex<double> &lambda_res, double tol_input=1e-14);
 	
-	void calc_dominant (const MatrixType &A, VectorType &x, complex<double> &lambda, double tol=1e-14);
+	void calc_dominant (const MatrixType &A, VectorType &x, complex<double> &lambda_res, double tol_input=1e-14);
 	
 	void set_dimK (size_t dimK_input);
 	
@@ -24,15 +24,18 @@ public:
 	
 private:
 	
-	size_t dimK, dimA;
+	size_t dimA, dimK, dimKc;
 	double error;
 	size_t N_iter;
+	double tol;
+	
+	complex<double> lambda;
 	
 	bool USER_HAS_FORCED_DIMK;
 	
 	vector<VectorType> Kbasis;
 	
-	void iteration (const MatrixType &A, const VectorType &x0, VectorType &x, complex<double> &lambda);
+	void iteration (const MatrixType &A, const VectorType &x0, VectorType &x, complex<double> &lambda_res);
 };
 
 template<typename MatrixType, typename VectorType>
@@ -43,22 +46,25 @@ info() const
 	
 	ss << "ArnoldiSolver" << ":"
 	<< " dimA=" << dimA
-	<< ", dimK=" << dimK
+	<< ", dimKmax=" << dimK
+	<< ", dimK=" << dimKc
 	<< ", iterations=" << N_iter;
 	if (N_iter == ARNOLDI_MAX_ITERATIONS)
 	{
 		ss << ", breakoff after max.iterations";
 	}
 	ss << ", error=" << error;
+	ss << ", λ=" << lambda;
+	ss << ", |λ|=" << abs(lambda);
 	
 	return ss.str();
 }
 
 template<typename MatrixType, typename VectorType>
 ArnoldiSolver<MatrixType,VectorType>::
-ArnoldiSolver (const MatrixType &A, VectorType &x, complex<double> &lambda, double tol)
+ArnoldiSolver (const MatrixType &A, VectorType &x, complex<double> &lambda_res, double tol_input)
 {
-	calc_dominant(A,x,lambda,tol);
+	calc_dominant(A,x,lambda_res,tol_input);
 }
 
 template<typename MatrixType, typename VectorType>
@@ -71,8 +77,9 @@ set_dimK (size_t dimK_input)
 
 template<typename MatrixType, typename VectorType>
 void ArnoldiSolver<MatrixType,VectorType>::
-calc_dominant (const MatrixType &A, VectorType &x, complex<double> &lambda, double tol)
+calc_dominant (const MatrixType &A, VectorType &x, complex<double> &lambda_res, double tol_input)
 {
+	tol = tol_input;
 	size_t try_dimA = dim(A);
 	size_t try_dimx = dim(x);
 	assert(try_dimA != 0 or try_dimx != 0);
@@ -90,21 +97,19 @@ calc_dominant (const MatrixType &A, VectorType &x, complex<double> &lambda, doub
 	VectorType x0 = x;
 	GaussianRandomVector<VectorType,complex<double> >::fill(dimA,x0);
 	
-	complex<double> lambda_old = complex<double>(1e3,1e3);
-	
 	do
 	{
-		lambda_old = lambda;
 		iteration(A,x0,x,lambda); ++N_iter;
 		x0 = x;
-		error = abs(lambda-lambda_old);
 	}
 	while (error>tol and N_iter<ARNOLDI_MAX_ITERATIONS);
+	
+	lambda_res = lambda;
 }
 
 template<typename MatrixType, typename VectorType>
 void ArnoldiSolver<MatrixType,VectorType>::
-iteration (const MatrixType &A, const VectorType &x0, VectorType &x, complex<double> &lambda)
+iteration (const MatrixType &A, const VectorType &x0, VectorType &x, complex<double> &lambda_res)
 {
 	Kbasis.clear();
 	Kbasis.resize(dimK+1);
@@ -113,6 +118,11 @@ iteration (const MatrixType &A, const VectorType &x0, VectorType &x, complex<dou
 	
 	// overlap matrix
 	MatrixXcd h(dimK+1,dimK); h.setZero();
+	ComplexEigenSolver<MatrixXcd> Eugen;
+	size_t max;
+	
+	dimKc = 1; // current Krylov dimension
+	complex<double> lambda_old = complex<double>(1e3,1e3);
 	
 	// Arnoldi construction of an orthogonal Krylov space basis
 	for (size_t j=0; j<dimK; ++j)
@@ -125,17 +135,23 @@ iteration (const MatrixType &A, const VectorType &x0, VectorType &x, complex<dou
 		}
 		h(j+1,j) = norm(Kbasis[j+1]);
 		Kbasis[j+1] /= h(j+1,j);
+		
+		dimKc = j+1;
+		
+		// calculate dominant eigenvector within the Krylov space
+		Eugen.compute(h.topLeftCorner(dimKc,dimKc));
+		Eugen.eigenvalues().cwiseAbs().maxCoeff(&max);
+		lambda = Eugen.eigenvalues()(max);
+		
+		error = abs(lambda_res-lambda_old);
+		lambda_old = lambda;
+		
+		if (error < tol) {break;}
 	}
 	
-	// calculate dominant eigenvector within the Krylov space
-	ComplexEigenSolver<MatrixXcd> Eugen(h.topRows(dimK));
-	size_t max;
-	Eugen.eigenvalues().cwiseAbs().maxCoeff(&max);
-	lambda = Eugen.eigenvalues()(max);
-	
-	// project out of Krylov space
+	// project out from Krylov space
 	x = Eugen.eigenvectors().col(max)(0) * Kbasis[0];
-	for (size_t k=1; k<dimK; ++k)
+	for (size_t k=1; k<dimKc; ++k)
 	{
 		x += Eugen.eigenvectors().col(max)(k) * Kbasis[k];
 	}

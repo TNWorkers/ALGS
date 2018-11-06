@@ -76,7 +76,7 @@ public:
 	void project_out (const Matrix<Scalar,Dynamic,1> &vin, VectorType &Vout);
 	//--------</projections>--------
 	
-protected:
+//protected:
 	
 	size_t dimK, dimH;
 	int eigval_index;
@@ -674,7 +674,7 @@ info() const
 	<< ", mem=" << round(stat.last_memory,3) << "GB";
 	
 	if (CHOSEN_REORTHO != LANCZOS::REORTHO::NO)
-	{ 
+	{
 		ss << ", reorthog.=" << stat.N_reortho;
 		if (CHOSEN_REORTHO == LANCZOS::REORTHO::FULL)
 		{
