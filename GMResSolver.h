@@ -44,8 +44,8 @@ info() const
 	stringstream ss;
 	
 	ss << "GMResSolver" << ":"
-	<< " dimA=" << dimA
-	<< ", dimKmax=" << dimK
+//	<< " dimA=" << dimA
+	<< "dimKmax=" << dimK
 	<< ", dimK=" << dimKc
 	<< ", iterations=" << N_iterations;
 	if (N_iterations == GMRES_MAX_ITERATIONS)
@@ -61,7 +61,7 @@ template<typename MatrixType, typename VectorType>
 GMResSolver<MatrixType,VectorType>::
 GMResSolver (const MatrixType &A, const VectorType &b, VectorType &x, double tol_input)
 {
-	solve(A,b,x,tol);
+	solve_linear(A,b,x,tol_input);
 }
 
 template<typename MatrixType, typename VectorType>
@@ -69,25 +69,26 @@ void GMResSolver<MatrixType,VectorType>::
 solve_linear (const MatrixType &A, const VectorType &b, VectorType &x, double tol_input, bool START_FROM_RANDOM)
 {
 	tol = tol_input;
-	size_t try_dimA = dim(A);
-	size_t try_dimb = dim(b);
-	assert(try_dimA != 0 or try_dimb != 0);
-	dimA = max(try_dimA, try_dimb);
+//	size_t try_dimA = dim(A);
+//	size_t try_dimb = dim(b);
+//	assert(try_dimA != 0 or try_dimb != 0);
+//	dimA = max(try_dimA, try_dimb);
 	
 	N_iterations = 0;
 	
 	if (!USER_HAS_FORCED_DIMK)
 	{
-		if      (dimA==1)             {dimK=1;}
-		else if (dimA>1 and dimA<200) {dimK=static_cast<size_t>(ceil(max(2.,0.4*dimA)));}
-		else                          {dimK=100;}
+//		if      (dimA==1)             {dimK=1;}
+//		else if (dimA>1 and dimA<200) {dimK=static_cast<size_t>(ceil(max(2.,0.4*dimA)));}
+//		else                          {dimK=100;}
+		dimK = 100;
 	}
 	
 	VectorType x0;
 	if (START_FROM_RANDOM)
 	{
 		x0 = b;
-		GaussianRandomVector<VectorType,double>::fill(dimA,x0);
+//		GaussianRandomVector<VectorType,double>::fill(dimA,x0);
 	}
 	else
 	{
@@ -124,7 +125,8 @@ iteration (const MatrixType &A, const VectorType &b, const VectorType &x0, Vecto
 	VectorType r0;
 	HxV(A,x0, r0);
 	r0 *= -1.;
-	r0 += b;
+//	r0 += b;
+	addScale(1.,b, r0);
 	double beta = norm(r0);
 	
 	Kbasis.clear();
@@ -140,11 +142,13 @@ iteration (const MatrixType &A, const VectorType &b, const VectorType &x0, Vecto
 	// Arnoldi construction of an orthogonal Krylov space basis
 	for (size_t j=0; j<dimK; ++j)
 	{
+//		cout << termcolor::red << "j=" << j << termcolor::reset << endl;
 		HxV(A,Kbasis[j], Kbasis[j+1]);
 		for (size_t i=0; i<=j; ++i)
 		{
 			h(i,j) = dot(Kbasis[i],Kbasis[j+1]);
-			Kbasis[j+1] -= h(i,j) * Kbasis[i];
+//			Kbasis[j+1] -= h(i,j) * Kbasis[i];
+			addScale(-h(i,j),Kbasis[i], Kbasis[j+1]);
 		}
 		h(j+1,j) = norm(Kbasis[j+1]);
 		Kbasis[j+1] /= h(j+1,j);
@@ -156,9 +160,14 @@ iteration (const MatrixType &A, const VectorType &b, const VectorType &x0, Vecto
 		
 		// a posteriori residual calculation
 		residual = h(dimKc,dimKc-1)*abs(y(dimKc-1));
+//		cout << termcolor::red << "residual=" << residual << termcolor::reset << endl;
 		
 //		cout << h << endl;
-//		cout << "j=" << j << ", dimKc=" << dimKc << ", h(dimKc,dimKc-1)=" << h(dimKc,dimKc-1) << ", abs(y(dimKc-1))=" << abs(y(dimKc-1)) << ", residual=" << residual << endl;
+//		cout << "j=" << j 
+//		     << ", dimKc=" << dimKc 
+//		     << ", h(dimKc,dimKc-1)=" << h(dimKc,dimKc-1) 
+//		     << ", abs(y(dimKc-1))=" << abs(y(dimKc-1)) 
+//		     << ", residual=" << residual << endl;
 		
 		if (residual < tol) {break;}
 	}
@@ -167,7 +176,8 @@ iteration (const MatrixType &A, const VectorType &b, const VectorType &x0, Vecto
 	x = x0;
 	for (size_t k=0; k<dimKc; ++k)
 	{
-		x += y(k) * Kbasis[k];
+//		x += y(k) * Kbasis[k];
+		addScale(y(k),Kbasis[k], x);
 	}
 }
 

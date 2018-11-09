@@ -71,7 +71,7 @@ public:
 	void project_out (const Matrix<Scalar,Dynamic,1> &vin, VectorType &Vout);
 	//--------</projections>--------
 	
-protected:
+//protected:
 	
 	size_t dimK, dimH;
 	int eigval_index;
