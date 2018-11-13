@@ -25,13 +25,13 @@ public:
 private:
 	
 	size_t dimA, dimK, dimKc;
-	double error;
+	double error=1.;
 	size_t N_iter;
 	double tol;
 	
 	complex<double> lambda;
 	
-	bool USER_HAS_FORCED_DIMK;
+	bool USER_HAS_FORCED_DIMK=false;
 	
 	vector<VectorType> Kbasis;
 	
@@ -84,7 +84,6 @@ calc_dominant (const MatrixType &A, VectorType &x, complex<double> &lambda_res, 
 	size_t try_dimx = dim(x);
 	assert(try_dimA != 0 or try_dimx != 0);
 	dimA = max(try_dimA, try_dimx);
-	
 	N_iter = 0;
 	
 	if (!USER_HAS_FORCED_DIMK)
@@ -96,7 +95,6 @@ calc_dominant (const MatrixType &A, VectorType &x, complex<double> &lambda_res, 
 	
 	VectorType x0 = x;
 	GaussianRandomVector<VectorType,complex<double> >::fill(dimA,x0);
-	
 	do
 	{
 		iteration(A,x0,x,lambda); ++N_iter;
@@ -115,7 +113,6 @@ iteration (const MatrixType &A, const VectorType &x0, VectorType &x, complex<dou
 	Kbasis.resize(dimK+1);
 	Kbasis[0] = x0;
 	normalize(Kbasis[0]);
-	
 	// overlap matrix
 	MatrixXcd h(dimK+1,dimK); h.setZero();
 	ComplexEigenSolver<MatrixXcd> Eugen;
@@ -123,7 +120,6 @@ iteration (const MatrixType &A, const VectorType &x0, VectorType &x, complex<dou
 	
 	dimKc = 1; // current Krylov dimension
 	complex<double> lambda_old = complex<double>(1e3,1e3);
-	
 	// Arnoldi construction of an orthogonal Krylov space basis
 	for (size_t j=0; j<dimK; ++j)
 	{
