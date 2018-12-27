@@ -127,7 +127,8 @@ iteration (const MatrixType &A, const VectorType &x0, VectorType &x, complex<dou
 		for (size_t i=0; i<=j; ++i)
 		{
 			h(i,j) = dot(Kbasis[i],Kbasis[j+1]);
-			Kbasis[j+1] -= h(i,j) * Kbasis[i];
+//			Kbasis[j+1] -= h(i,j) * Kbasis[i];
+			addScale(-h(i,j),Kbasis[i], Kbasis[j+1]);
 		}
 		h(j+1,j) = norm(Kbasis[j+1]);
 		Kbasis[j+1] /= h(j+1,j);
@@ -147,9 +148,11 @@ iteration (const MatrixType &A, const VectorType &x0, VectorType &x, complex<dou
 	
 	// project out from Krylov space
 	x = Eugen.eigenvectors().col(max)(0) * Kbasis[0];
+	assert(dimKc == Eugen.eigenvectors().rows() and "Bad Krylov matrix in ArndoldiSolver! Perhaps nan or all zero.");
 	for (size_t k=1; k<dimKc; ++k)
 	{
-		x += Eugen.eigenvectors().col(max)(k) * Kbasis[k];
+//		x += Eugen.eigenvectors().col(max)(k) * Kbasis[k];
+		addScale(Eugen.eigenvectors().col(max)(k),Kbasis[k], x);
 	}
 }
 
