@@ -125,8 +125,8 @@ iteration (const MatrixType &A, const VectorType &b, const VectorType &x0, Vecto
 	VectorType r0;
 	HxV(A,x0, r0);
 	r0 *= -1.;
-//	r0 += b;
-	addScale(1.,b, r0);
+	r0 += b;
+//	addScale(1.,b, r0);
 	double beta = norm(r0);
 	
 	Kbasis.clear();
@@ -147,8 +147,8 @@ iteration (const MatrixType &A, const VectorType &b, const VectorType &x0, Vecto
 		for (size_t i=0; i<=j; ++i)
 		{
 			h(i,j) = dot(Kbasis[i],Kbasis[j+1]);
-//			Kbasis[j+1] -= h(i,j) * Kbasis[i];
-			addScale(-h(i,j),Kbasis[i], Kbasis[j+1]);
+			Kbasis[j+1] -= h(i,j) * Kbasis[i];
+//			addScale(-h(i,j),Kbasis[i], Kbasis[j+1]);
 		}
 		h(j+1,j) = norm(Kbasis[j+1]);
 		Kbasis[j+1] /= h(j+1,j);
@@ -172,12 +172,12 @@ iteration (const MatrixType &A, const VectorType &b, const VectorType &x0, Vecto
 		if (residual < tol) {break;}
 	}
 	
-	// project out from Krylov space
+	// project out of Krylov space
 	x = x0;
 	for (size_t k=0; k<dimKc; ++k)
 	{
-//		x += y(k) * Kbasis[k];
-		addScale(y(k),Kbasis[k], x);
+		x += y(k) * Kbasis[k];
+//		addScale(y(k),Kbasis[k], x);
 	}
 }
 
