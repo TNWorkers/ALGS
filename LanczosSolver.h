@@ -81,9 +81,9 @@ public:
 	double err_eigval, err_state;
 	
 	LANCZOS::EFFICIENCY::OPTION CHOSEN_EFFICIENCY;
-	bool USER_HAS_FORCED_EFFICIENCY;
+	bool USER_HAS_FORCED_EFFICIENCY=false;
 	LANCZOS::EDGE::OPTION CHOSEN_EDGE;
-	bool USER_HAS_FORCED_DIMK;
+	bool USER_HAS_FORCED_DIMK=false;
 	
 	void setup_H (const Hamiltonian &H, const VectorType &V);
 	int determine_dimK (size_t dimH_input) const;
