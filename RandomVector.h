@@ -1,6 +1,8 @@
 #ifndef RANDOMVECTOR
 #define RANDOMVECTOR
 
+#include <Eigen/Dense>
+
 //#include <boost/random/mersenne_twister.hpp>
 //#include <boost/random/normal_distribution.hpp>
 //#include <boost/random/uniform_real_distribution.hpp>
@@ -79,16 +81,16 @@ struct GaussianRandomVector
 //	}
 //};
 
-MatrixXd randOrtho (size_t N)
+Eigen::MatrixXd randOrtho (size_t N)
 {
-	MatrixXd M(N,N);
+	Eigen::MatrixXd M(N,N);
 	for (size_t i=0; i<N; ++i)
 	for (size_t j=0; j<N; ++j)
 	{
 		M(i,j) = threadSafeRandUniform<double>(0.,1.);
 	}
-	HouseholderQR<MatrixXd> Quirinus(M);
-	MatrixXd Qmatrix = MatrixXd::Identity(N,N);
+	Eigen::HouseholderQR<Eigen::MatrixXd> Quirinus(M);
+	Eigen::MatrixXd Qmatrix = Eigen::MatrixXd::Identity(N,N);
 	Qmatrix = Quirinus.householderQ() * Qmatrix;
 	return Qmatrix;
 }
