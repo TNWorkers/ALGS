@@ -12,11 +12,12 @@
 #include "ChebyshevAbscissa.h"
 #include "Stopwatch.h" // from TOOLS
 
-template<typename Hamiltonian, typename VectorType, ORTHPOLY P=CHEBYSHEV>
+template<typename Hamiltonian, typename VectorType, typename Scalar=double, ORTHPOLY P=CHEBYSHEV>
 class OrthPolyGreen : public OrthPolyBase<Hamiltonian,VectorType>
 {
 public:
 	
+	OrthPolyGreen() {};
 	OrthPolyGreen (const Hamiltonian &H, double padding_input=0.005);
 	OrthPolyGreen (double Emin_input, double Emax_input, double padding_input=0.005);
 	
@@ -32,22 +33,22 @@ public:
 	double evaluate_ImAA (double E, int Msave=-1, double Eoffset=0., bool REVERSE=false, KERNEL_CHOICE KERNEL=JACKSON);
 	double evaluate_ImAA_scaled (double x, int Msave_input, bool REVERSE=false, KERNEL_CHOICE KERNEL=JACKSON);
 //	double evaluate_deriv (double E, int Msave_input, double Eoffset, bool REVERSE, KERNEL_CHOICE KERNEL=JACKSON);
-	double evaluate_ImAB (int i, double E, int Msave_input=-1, double Eoffset=0., bool REVERSE=false, KERNEL_CHOICE KERNEL=JACKSON);
+	Scalar evaluate_ImAB (int i, double E, int Msave_input=-1, double Eoffset=0., bool REVERSE=false, KERNEL_CHOICE KERNEL=JACKSON);
 	double evaluate_ImAA_Chebyshev (double E, int Msave=-1, double Eoffset=0., bool REVERSE=false, KERNEL_CHOICE KERNEL=JACKSON);
 	double ImAAselfconv (double y, int Msave=-1, double Eoffset=0., bool REVERSE=false, KERNEL_CHOICE KERNEL=JACKSON);
 	
 	// saving, returning, injecting
-	void add_savepoint (int Msave, string momfile, string datfile, double Eoffset, bool REVERSE, KERNEL_CHOICE KERNEL=JACKSON);
+	void add_savepoint (int Msave, string momfile, string datfile, ArrayXd Eoffset, bool REVERSE, KERNEL_CHOICE KERNEL=JACKSON);
 	void clear_savepoints() {savepoints.clear();};
 	
-	void save_ImAA (int Msave, string dumpfile, double Eoffset=0., bool REVERSE=false, KERNEL_CHOICE KERNEL=JACKSON);
+	void save_ImAA (int Msave, string dumpfile, ArrayXd Eoffset, bool REVERSE=false, KERNEL_CHOICE KERNEL=JACKSON);
 //	void save_ImAAderiv (int Msave, string datfile, double Eoffset, bool REVERSE, KERNEL_CHOICE KERNEL=JACKSON);
 	void save_ImAAmoments (string momfile, int Msave_input=-1);
 	void inject_ImAAmoments (const VectorXd ImAAmoments_input);
 	MatrixXd get_ImAA (int Msave, double Eoffset=0., bool REVERSE=false, KERNEL_CHOICE KERNEL=JACKSON);
 	VectorXd get_ImAAmoments() {return ImAAmoments;}
 	
-	void save_ImAB (int Msave, string datfile, double Eoffset=0., bool REVERSE=false, KERNEL_CHOICE KERNEL=JACKSON);
+	void save_ImAB (int Msave, string datfile, ArrayXd Eoffset, bool REVERSE=false, KERNEL_CHOICE KERNEL=JACKSON);
 	void save_ImABmoments (string momfile, int Msave_input=-1);
 	
 	void predict_ImAA (int M_new);
@@ -60,30 +61,30 @@ public:
 	
 private:
 	
-	list<tuple<int,string,string,double,bool,KERNEL_CHOICE> > savepoints;
+	list<tuple<int,string,string,ArrayXd,bool,KERNEL_CHOICE> > savepoints;
 	
 	int M;
 	VectorXd ImAAmoments;
-	bool GOT_MOMENTS;
+	bool GOT_MOMENTS = false;
 	
-	vector<VectorXd> ImABmoments;
+	vector<vector<Scalar> > ImABmoments;
 	int Asize;
 };
 
-template<typename Hamiltonian, typename VectorType, ORTHPOLY P>
-OrthPolyGreen<Hamiltonian,VectorType,P>::
+template<typename Hamiltonian, typename VectorType, typename Scalar, ORTHPOLY P>
+OrthPolyGreen<Hamiltonian,VectorType,Scalar,P>::
 OrthPolyGreen (const Hamiltonian &H, double padding_input)
 :OrthPolyBase<Hamiltonian,VectorType>(H,padding_input), GOT_MOMENTS(false)
 {}
 
-template<typename Hamiltonian, typename VectorType, ORTHPOLY P>
-OrthPolyGreen<Hamiltonian,VectorType,P>::
+template<typename Hamiltonian, typename VectorType, typename Scalar, ORTHPOLY P>
+OrthPolyGreen<Hamiltonian,VectorType,Scalar,P>::
 OrthPolyGreen (double Emin_input, double Emax_input, double padding_input)
 :OrthPolyBase<Hamiltonian,VectorType>(Emin_input,Emax_input,padding_input), GOT_MOMENTS(false)
 {}
 
-template<typename Hamiltonian, typename VectorType, ORTHPOLY P>
-string OrthPolyGreen<Hamiltonian,VectorType,P>::
+template<typename Hamiltonian, typename VectorType, typename Scalar, ORTHPOLY P>
+string OrthPolyGreen<Hamiltonian,VectorType,Scalar,P>::
 info() const
 {
 //	stringstream ss;
@@ -104,17 +105,17 @@ info() const
 	return ss.str();
 }
 
-template<typename Hamiltonian, typename VectorType, ORTHPOLY P>
-void OrthPolyGreen<Hamiltonian,VectorType,P>::
-add_savepoint (int Msave, string momfile, string datfile, double Eoffset, bool REVERSE, KERNEL_CHOICE KERNEL)
+template<typename Hamiltonian, typename VectorType, typename Scalar, ORTHPOLY P>
+void OrthPolyGreen<Hamiltonian,VectorType,Scalar,P>::
+add_savepoint (int Msave, string momfile, string datfile, ArrayXd Eoffset, bool REVERSE, KERNEL_CHOICE KERNEL)
 {
-	tuple<int,string,string,double,bool,KERNEL_CHOICE> info = make_tuple(Msave,momfile,datfile,Eoffset,REVERSE,KERNEL);
+	tuple<int,string,string,ArrayXd,bool,KERNEL_CHOICE> info = make_tuple(Msave,momfile,datfile,Eoffset,REVERSE,KERNEL);
 	savepoints.push_back(info);
 }
 
 // -1/π Im≪A;A≫(ω)
-template<typename Hamiltonian, typename VectorType, ORTHPOLY P>
-void OrthPolyGreen<Hamiltonian,VectorType,P>::
+template<typename Hamiltonian, typename VectorType, typename Scalar, ORTHPOLY P>
+void OrthPolyGreen<Hamiltonian,VectorType,Scalar,P>::
 calc_ImAA (Hamiltonian &H, const VectorType &AxV, int M_input, bool USE_IDENTITIES)
 {
 	Stopwatch<> TotalTimer;
@@ -135,8 +136,8 @@ calc_ImAA (Hamiltonian &H, const VectorType &AxV, int M_input, bool USE_IDENTITI
 	H.scale(this->alpha,this->beta); // H = α·H+β
 	HxV(H,V0,V1); ++this->N_mvm; // V1 = H·V0;
 	
-	ImAAmoments(0) = dot(V0,V0);
-	ImAAmoments(1) = dot(V0,V1);
+	ImAAmoments(0) = dot_green(V0,V0);
+	ImAAmoments(1) = dot_green(V0,V1);
 	
 	H.scale(OrthPoly<P>::C(1)); // H = C_n·(α·H+β)
 	
@@ -153,12 +154,12 @@ calc_ImAA (Hamiltonian &H, const VectorType &AxV, int M_input, bool USE_IDENTITI
 		
 		if (USE_IDENTITIES == true)
 		{
-			ImAAmoments(2*n)   = 2.*dot(V0,V0)-ImAAmoments(0);
-			ImAAmoments(2*n+1) = 2.*dot(V1,V0)-ImAAmoments(1);
+			ImAAmoments(2*n)   = 2.*dot_green(V0,V0)-ImAAmoments(0);
+			ImAAmoments(2*n+1) = 2.*dot_green(V1,V0)-ImAAmoments(1);
 		}
 		else
 		{
-			ImAAmoments(n+1) = dot(AxV,V1);
+			ImAAmoments(n+1) = dot_green(AxV,V1);
 		}
 		
 		//----<saving>----
@@ -195,9 +196,9 @@ calc_ImAA (Hamiltonian &H, const VectorType &AxV, int M_input, bool USE_IDENTITI
 }
 
 // -1/π Im≪A;B≫(ω)
-template<typename Hamiltonian, typename VectorType, ORTHPOLY P>
+template<typename Hamiltonian, typename VectorType, typename Scalar, ORTHPOLY P>
 //template<typename StateIterator>
-void OrthPolyGreen<Hamiltonian,VectorType,P>::
+void OrthPolyGreen<Hamiltonian,VectorType,Scalar,P>::
 calc_ImAB (Hamiltonian &H, const vector<VectorType> &AxV, const VectorType &BxV, int M_input)
 //calc_ImAB (Hamiltonian &H, StateIterator &AxV, const VectorType &BxV, int M_input)
 {
@@ -210,7 +211,10 @@ calc_ImAB (Hamiltonian &H, const vector<VectorType> &AxV, const VectorType &BxV,
 	for (size_t i=0; i<Asize; ++i)
 	{
 		ImABmoments[i].resize(M);
-		ImABmoments[i].setZero();
+		for (size_t n=0; n<M; ++n)
+		{
+			ImABmoments[i][n] = 0;
+		}
 	}
 	
 	lout << "****** -1/π Im≪A;B≫(ω) iteration: " << "0+1" << " ******" << endl;
@@ -222,14 +226,9 @@ calc_ImAB (Hamiltonian &H, const vector<VectorType> &AxV, const VectorType &BxV,
 	
 	for (size_t i=0; i<Asize; ++i)
 	{
-		ImABmoments[i](0) = dot(AxV[i],V0);
-		ImABmoments[i](1) = dot(AxV[i],V1);
+		ImABmoments[i][0] = dot_green(AxV[i],V0);
+		ImABmoments[i][1] = dot_green(AxV[i],V1);
 	}
-//	for (AxV=AxV.begin(); AxV!=AxV.end(); ++AxV)
-//	{
-//		ImABmoments[AxV.index()](0) = dot(*AxV,V0);
-//		ImABmoments[AxV.index()](1) = dot(*AxV,V1);
-//	}
 	
 	H.scale(OrthPoly<P>::C(1)); // H = A_n·(α·H+β)
 	
@@ -245,12 +244,8 @@ calc_ImAB (Hamiltonian &H, const vector<VectorType> &AxV, const VectorType &BxV,
 		
 		for (size_t i=0; i<Asize; ++i)
 		{
-			ImABmoments[i](n+1) = dot(AxV[i],V1);
+			ImABmoments[i][n+1] = dot_green(AxV[i],V1);
 		}
-//		for (AxV=AxV.begin(); AxV!=AxV.end(); ++AxV)
-//		{
-//			ImABmoments[AxV.index()](n+1) = dot(*AxV,V1);
-//		}
 		
 		//----<save>----
 		for (auto info=savepoints.begin(); info!=savepoints.end(); ++info)
@@ -271,9 +266,9 @@ calc_ImAB (Hamiltonian &H, const vector<VectorType> &AxV, const VectorType &BxV,
 	GOT_MOMENTS = true;
 }
 
-template<typename Hamiltonian, typename VectorType, ORTHPOLY P>
-void OrthPolyGreen<Hamiltonian,VectorType,P>::
-save_ImAA (int Msave, string datfile, double Eoffset, bool REVERSE, KERNEL_CHOICE KERNEL)
+template<typename Hamiltonian, typename VectorType, typename Scalar, ORTHPOLY P>
+void OrthPolyGreen<Hamiltonian,VectorType,Scalar,P>::
+save_ImAA (int Msave, string datfile, ArrayXd Eoffset, bool REVERSE, KERNEL_CHOICE KERNEL)
 {
 	assert(Msave <= M);
 	double a=this->a; double b=this->b; double padding=this->padding;
@@ -327,7 +322,7 @@ save_ImAA (int Msave, string datfile, double Eoffset, bool REVERSE, KERNEL_CHOIC
 		{
 			if (abs(*Eit) < 1.-this->padding)
 			{
-				datfiler << a*(*Eit)+b-Eoffset << "\t" << ImAAgamma(Eit.index())*OrthPoly<P>::w(*Eit)/abs(a) << endl;
+				datfiler << a*(*Eit)+b-Eoffset(0) << "\t" << ImAAgamma(Eit.index())*OrthPoly<P>::w(*Eit)/abs(a) << endl;
 			}
 		}
 	}
@@ -338,7 +333,7 @@ save_ImAA (int Msave, string datfile, double Eoffset, bool REVERSE, KERNEL_CHOIC
 		{
 			if (abs(*x) < 1.-this->padding)
 			{
-				datfiler << a*(*x)+b-Eoffset << "\t" << evaluate_ImAA_scaled(*x,Msave,REVERSE,KERNEL) << endl;
+				datfiler << a*(*x)+b-Eoffset(0) << "\t" << evaluate_ImAA_scaled(*x,Msave,REVERSE,KERNEL) << endl;
 			}
 		}
 	}
@@ -347,14 +342,15 @@ save_ImAA (int Msave, string datfile, double Eoffset, bool REVERSE, KERNEL_CHOIC
 	lout << datfile << " done!" << endl;
 }
 
-template<typename Hamiltonian, typename VectorType, ORTHPOLY P>
-void OrthPolyGreen<Hamiltonian,VectorType,P>::
-save_ImAB (int Msave, string datfile, double Eoffset, bool REVERSE, KERNEL_CHOICE KERNEL)
+template<typename Hamiltonian, typename VectorType, typename Scalar, ORTHPOLY P>
+void OrthPolyGreen<Hamiltonian,VectorType,Scalar,P>::
+save_ImAB (int Msave, string datfile, ArrayXd Eoffset, bool REVERSE, KERNEL_CHOICE KERNEL)
 {
 	assert(Msave <= M);
 	double a=this->a; double b=this->b; double Emin=this->Emin; double Emax=this->Emax;
 	
 	int Epoints = max(2*Msave,4000); // O(10^3) Epoints for smooth plots
+	
 //	IntervalIterator Eit(Emin-Eoffset,Emax-Eoffset,Epoints,ChebyshevAbscissa);
 //	
 //	MatrixXd ImABspectrum(Epoints,Asize+1);
@@ -399,41 +395,55 @@ save_ImAB (int Msave, string datfile, double Eoffset, bool REVERSE, KERNEL_CHOIC
 //		}
 //	}
 	
+	int qsize = Eoffset.size();
 	
-	MatrixXd ImABspectrum(Epoints,Asize+1);
-	
-	IntervalIterator Eit_(Emin-Eoffset,Emax-Eoffset,Epoints);
-	for (Eit_=Eit_.begin(); Eit_<Eit_.end(); ++Eit_)
+	//save to standard text file
+	for (int q=0; q<qsize; ++q)
 	{
-		ImABspectrum(Eit_.index(),0) = *Eit_;
-	}
-
-	#pragma omp parallel for
-	for (size_t i=0; i<Asize; ++i)
-	{
-		IntervalIterator Eit(Emin-Eoffset,Emax-Eoffset,Epoints);
+		vector<vector<Scalar> > ImABspectrum(Epoints);
+		for (int iE=0; iE<Epoints; ++iE)
+		{
+			ImABspectrum[iE].resize(Asize);
+		}
+		
+		IntervalIterator Eit(Emin-Eoffset(q),Emax-Eoffset(q),Epoints);
+		
+		for (size_t i=0; i<Asize; ++i)
 		for (Eit=Eit.begin(); Eit<Eit.end(); ++Eit)
 		{
-			ImABspectrum(Eit.index(),i+1) = evaluate_ImAB(i, *Eit, Msave, Eoffset, REVERSE, KERNEL);
+			ImABspectrum[Eit.index()][i] = evaluate_ImAB(i, *Eit, Msave, Eoffset(q), REVERSE, KERNEL);
 		}
+		
+		string datfile_tmp = datfile;
+		if (qsize > 1) datfile_tmp += make_string(".q",q);
+		ofstream datfiler(datfile_tmp);
+		
+		for (int iE=0; iE<Epoints; ++iE)
+		{
+			datfiler << Eit(iE) << "\t";
+			
+			for (size_t i=0; i<Asize; ++i)
+			{
+				datfiler << at(ImABspectrum[iE][i],q) << "\t";
+			}
+			datfiler << endl;
+		}
+		datfiler.close();
 	}
-
-	//save to HDF5 file if desired
-    #ifdef USE_HDF5_STORAGE
-	HDF5Interface target(datfile+".h5",FILE_ACCESS_MODE::WRITE);
-	target.save_matrix(ImABspectrum,"ssf");
-	target.close();
-	#endif
-	//save to standard text file
-	ofstream datfiler(datfile);
-	datfiler << ImABspectrum << endl;
-	datfiler.close();
 	
-	lout << datfile << " done!" << endl;
+	//code must be updated for Scalar type:
+//	//save to HDF5 file if desired
+//	#ifdef USE_HDF5_STORAGE
+//	HDF5Interface target(datfile+".h5",FILE_ACCESS_MODE::WRITE);
+//	target.save_matrix(ImABspectrum,"ssf");
+//	target.close();
+//	#endif
+	
+	lout << datfile << " done!, qsize=" << qsize << endl;
 }
 
-//template<typename Hamiltonian, typename VectorType, ORTHPOLY P>
-//void OrthPolyGreen<Hamiltonian,VectorType,P>::
+//template<typename Hamiltonian, typename VectorType, typename Scalar, ORTHPOLY P>
+//void OrthPolyGreen<Hamiltonian,VectorType,Scalar,P>::
 //save_ImAAderiv (int Msave, string datfile, double Eoffset, bool REVERSE, KERNEL_CHOICE KERNEL)
 //{
 //	assert(Msave <= M);
@@ -463,8 +473,8 @@ save_ImAB (int Msave, string datfile, double Eoffset, bool REVERSE, KERNEL_CHOIC
 //	lout << datfile << " done!" << endl;
 //}
 
-template<typename Hamiltonian, typename VectorType, ORTHPOLY P>
-void OrthPolyGreen<Hamiltonian,VectorType,P>::
+template<typename Hamiltonian, typename VectorType, typename Scalar, ORTHPOLY P>
+void OrthPolyGreen<Hamiltonian,VectorType,Scalar,P>::
 save_ImAAmoments (string momfile, int Msave_input)
 {
 	ofstream fout(momfile);
@@ -479,28 +489,39 @@ save_ImAAmoments (string momfile, int Msave_input)
 	lout << momfile << " done!" << endl;
 }
 
-template<typename Hamiltonian, typename VectorType, ORTHPOLY P>
-void OrthPolyGreen<Hamiltonian,VectorType,P>::
+template<typename Hamiltonian, typename VectorType, typename Scalar, ORTHPOLY P>
+void OrthPolyGreen<Hamiltonian,VectorType,Scalar,P>::
 save_ImABmoments (string momfile, int Msave_input)
 {
 	ofstream fout(momfile);
-	int Msave = (Msave_input==-1)? ImAAmoments.rows() : Msave_input;
+//	int Msave = (Msave_input==-1)? ImAAmoments.rows() : Msave_input;
+	int Msave = (Msave_input==-1)? ImABmoments.size() : Msave_input;
 	
-	for (size_t n=0; n<Msave; ++n)
+	for (int q=0; q<size(ImABmoments[0][0]); ++q)
 	{
-		for (size_t i=0; i<Asize; ++i)
+		string momfile_tmp = momfile;
+		if (size(ImABmoments[0][0]) > 1)
 		{
-			fout << setprecision(13) << ImABmoments[i](n) << "\t";
+			momfile_tmp += make_string(".q",q);
 		}
-		fout << endl;
+		ofstream datfiler(momfile_tmp);
+		
+		for (size_t n=0; n<Msave; ++n)
+		{
+			for (size_t i=0; i<Asize; ++i)
+			{
+				fout << setprecision(13) << at(ImABmoments[i][n],q) << "\t";
+			}
+			fout << endl;
+		}
 	}
 	
 	fout.close();
-	lout << momfile << " done!" << endl;
+	lout << momfile << " done!, qsize=" << size(ImABmoments[0][0]) << endl;
 }
 
-template<typename Hamiltonian, typename VectorType, ORTHPOLY P>
-inline double OrthPolyGreen<Hamiltonian,VectorType,P>::
+template<typename Hamiltonian, typename VectorType, typename Scalar, ORTHPOLY P>
+inline double OrthPolyGreen<Hamiltonian,VectorType,Scalar,P>::
 ImAAarea (KERNEL_CHOICE KERNEL)
 {
 	assert(GOT_MOMENTS == true and P==CHEBYSHEV);
@@ -509,8 +530,8 @@ ImAAarea (KERNEL_CHOICE KERNEL)
 }
 
 // using normal recurrence
-template<typename Hamiltonian, typename VectorType, ORTHPOLY P>
-double OrthPolyGreen<Hamiltonian,VectorType,P>::
+template<typename Hamiltonian, typename VectorType, typename Scalar, ORTHPOLY P>
+double OrthPolyGreen<Hamiltonian,VectorType,Scalar,P>::
 evaluate_ImAA (double E, int Msave_input, double Eoffset, bool REVERSE, KERNEL_CHOICE KERNEL)
 {
 	if (E+Eoffset<=this->Emin or E+Eoffset>=this->Emax) {return 0.;}
@@ -532,8 +553,8 @@ evaluate_ImAA (double E, int Msave_input, double Eoffset, bool REVERSE, KERNEL_C
 	}
 }
 
-//template<typename Hamiltonian, typename VectorType, ORTHPOLY P>
-//double OrthPolyGreen<Hamiltonian,VectorType,P>::
+//template<typename Hamiltonian, typename VectorType, typename Scalar, ORTHPOLY P>
+//double OrthPolyGreen<Hamiltonian,VectorType,Scalar,P>::
 //evaluate_ReAA (double E, int Msave_input, double Eoffset, bool REVERSE, KERNEL_CHOICE KERNEL)
 //{
 //	if (E+Eoffset<=this->Emin or E+Eoffset>=this->Emax) {return 0.;}
@@ -557,8 +578,8 @@ evaluate_ImAA (double E, int Msave_input, double Eoffset, bool REVERSE, KERNEL_C
 //}
 
 // using normal recurrence
-template<typename Hamiltonian, typename VectorType, ORTHPOLY P>
-double OrthPolyGreen<Hamiltonian,VectorType,P>::
+template<typename Hamiltonian, typename VectorType, typename Scalar, ORTHPOLY P>
+double OrthPolyGreen<Hamiltonian,VectorType,Scalar,P>::
 evaluate_ImAA_scaled (double x, int Msave_input, bool REVERSE, KERNEL_CHOICE KERNEL)
 {
 	if (x<-1. or x>1.) {return 0.;}
@@ -578,8 +599,8 @@ evaluate_ImAA_scaled (double x, int Msave_input, bool REVERSE, KERNEL_CHOICE KER
 }
 
 // using Clenshaw recurrence
-template<typename Hamiltonian, typename VectorType, ORTHPOLY P>
-double OrthPolyGreen<Hamiltonian,VectorType,P>::
+template<typename Hamiltonian, typename VectorType, typename Scalar, ORTHPOLY P>
+double OrthPolyGreen<Hamiltonian,VectorType,Scalar,P>::
 evaluate_ImAA_Chebyshev (double E, int Msave_input, double Eoffset, bool REVERSE, KERNEL_CHOICE KERNEL)
 {
 	assert(P == CHEBYSHEV);
@@ -600,8 +621,8 @@ evaluate_ImAA_Chebyshev (double E, int Msave_input, double Eoffset, bool REVERSE
 }
 
 //// using Chebyshev recurrence
-//template<typename Hamiltonian, typename VectorType, ORTHPOLY P>
-//double OrthPolyGreen<Hamiltonian,VectorType,P>::
+//template<typename Hamiltonian, typename VectorType, typename Scalar, ORTHPOLY P>
+//double OrthPolyGreen<Hamiltonian,VectorType,Scalar,P>::
 //evaluate_deriv (double E, int Msave_input, double Eoffset, bool REVERSE, KERNEL_CHOICE KERNEL)
 //{
 //	if (E+Eoffset<=this->Emin or E+Eoffset>=this->Emax) {return 0.;}
@@ -624,28 +645,28 @@ evaluate_ImAA_Chebyshev (double E, int Msave_input, double Eoffset, bool REVERSE
 //}
 
 // using Chebyshev recurrence
-template<typename Hamiltonian, typename VectorType, ORTHPOLY P>
-double OrthPolyGreen<Hamiltonian,VectorType,P>::
+template<typename Hamiltonian, typename VectorType, typename Scalar, ORTHPOLY P>
+Scalar OrthPolyGreen<Hamiltonian,VectorType,Scalar,P>::
 evaluate_ImAB (int i, double E, int Msave_input, double Eoffset, bool REVERSE, KERNEL_CHOICE KERNEL)
 {
-	int Msave = (Msave_input==-1)? ImABmoments[i].rows() : Msave_input;
+	int Msave = (Msave_input==-1)? ImABmoments[i].size() : Msave_input;
 	double a=this->a; double b=this->b;
 	
 	double E_scaled = (E+Eoffset-b)/a;
-
-	double res = OrthPoly<P>::orthfac(0) * ImABmoments[i](0) * this->kernel(0,Msave,KERNEL) * OrthPoly<P>::eval(0,E_scaled);
+	
+	Scalar res = OrthPoly<P>::orthfac(0) * ImABmoments[i][0] * this->kernel(0,Msave,KERNEL) * OrthPoly<P>::eval(0,E_scaled);
 	for (int n=1; n<Msave; ++n)
 	{
 		double phase = (REVERSE==true)? pow(-1.,n) : 1.;
-//		res += 2.*ImABmoments[i](n) * this->kernel(n,Msave,KERNEL) * phase * ChebyshevT(n,E_scaled);
-		res += OrthPoly<P>::orthfac(n) * ImABmoments[i](n) * this->kernel(n,Msave,KERNEL) * phase * OrthPoly<P>::eval(n,E_scaled);
+//		res += 2.*ImABmoments[i][n] * this->kernel(n,Msave,KERNEL) * phase * ChebyshevT(n,E_scaled);
+		res += OrthPoly<P>::orthfac(n) * ImABmoments[i][n] * this->kernel(n,Msave,KERNEL) * phase * OrthPoly<P>::eval(n,E_scaled);
 	}
 	
 	return res*OrthPoly<P>::w(E_scaled)/abs(a);
 }
 
-template<typename Hamiltonian, typename VectorType, ORTHPOLY P>
-double OrthPolyGreen<Hamiltonian,VectorType,P>::
+template<typename Hamiltonian, typename VectorType, typename Scalar, ORTHPOLY P>
+double OrthPolyGreen<Hamiltonian,VectorType,Scalar,P>::
 ImAAintegral (double (*f)(double), int Msave, double Eoffset, bool REVERSE, KERNEL_CHOICE KERNEL)
 {
 	assert(GOT_MOMENTS == true and Msave <= M and P==CHEBYSHEV);
@@ -658,8 +679,8 @@ ImAAintegral (double (*f)(double), int Msave, double Eoffset, bool REVERSE, KERN
 }
 
 // \int A(x)*A(y-x)dx
-template<typename Hamiltonian, typename VectorType, ORTHPOLY P>
-double OrthPolyGreen<Hamiltonian,VectorType,P>::
+template<typename Hamiltonian, typename VectorType, typename Scalar, ORTHPOLY P>
+double OrthPolyGreen<Hamiltonian,VectorType,Scalar,P>::
 ImAAselfconv (double y, int Msave, double Eoffset, bool REVERSE, KERNEL_CHOICE KERNEL)
 {
 	assert(GOT_MOMENTS == true and Msave <= M and P==CHEBYSHEV);
@@ -681,8 +702,8 @@ ImAAselfconv (double y, int Msave, double Eoffset, bool REVERSE, KERNEL_CHOICE K
 	return res/Epoints;
 }
 
-template<typename Hamiltonian, typename VectorType, ORTHPOLY P>
-MatrixXd OrthPolyGreen<Hamiltonian,VectorType,P>::
+template<typename Hamiltonian, typename VectorType, typename Scalar, ORTHPOLY P>
+MatrixXd OrthPolyGreen<Hamiltonian,VectorType,Scalar,P>::
 get_ImAA (int Msave, double Eoffset, bool REVERSE, KERNEL_CHOICE KERNEL)
 {
 	assert(Msave <= M and GOT_MOMENTS == true and P==CHEBYSHEV);
@@ -702,8 +723,8 @@ get_ImAA (int Msave, double Eoffset, bool REVERSE, KERNEL_CHOICE KERNEL)
 	return Eit.get_data();
 }
 
-template<typename Hamiltonian, typename VectorType, ORTHPOLY P>
-void OrthPolyGreen<Hamiltonian,VectorType,P>::
+template<typename Hamiltonian, typename VectorType, typename Scalar, ORTHPOLY P>
+void OrthPolyGreen<Hamiltonian,VectorType,Scalar,P>::
 inject_ImAAmoments (const VectorXd ImAAmoments_input)
 {
 	ImAAmoments = ImAAmoments_input;
@@ -711,8 +732,8 @@ inject_ImAAmoments (const VectorXd ImAAmoments_input)
 	M = ImAAmoments.rows();
 }
 
-template<typename Hamiltonian, typename VectorType, ORTHPOLY P>
-void OrthPolyGreen<Hamiltonian,VectorType,P>::
+template<typename Hamiltonian, typename VectorType, typename Scalar, ORTHPOLY P>
+void OrthPolyGreen<Hamiltonian,VectorType,Scalar,P>::
 predict_ImAA (int M_new)
 {
 	M += M_new;

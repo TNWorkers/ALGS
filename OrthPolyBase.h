@@ -13,11 +13,32 @@ using namespace Eigen;
 
 enum KERNEL_CHOICE {NOKERNEL=0, JACKSON=1, LORENTZ=2};
 
+int size (const double &x)
+{
+	return 1;
+}
+
+double at (const double &x, int i)
+{
+	return x;
+}
+
+int size (const ArrayXd &V)
+{
+	return V.rows();
+}
+
+double at (const ArrayXd &V, int i)
+{
+	return V(i);
+}
+
 template<typename Hamiltonian, typename VectorType>
 class OrthPolyBase
 {
 public:
 	
+	OrthPolyBase(){};
 	OrthPolyBase (const Hamiltonian &H, double padding_input=0.005);
 	OrthPolyBase (double Emin_input, double Emax_input,  double padding_input=0.005);
 	
@@ -37,7 +58,7 @@ protected:
 	
 	double Emin, Emax;
 	double a, b, alpha, beta;
-	double padding;
+	double padding = 0.005;
 	
 	VectorXd  fct (const VectorXd &moments, int Npoints, bool REVERSE=false, KERNEL_CHOICE KERNEL_input=JACKSON);
 	VectorXcd fft (const VectorXd &moments, int Npoints, KERNEL_CHOICE KERNEL_input=JACKSON);
@@ -126,7 +147,7 @@ inline double OrthPolyBase<Hamiltonian,VectorType>::
 kernel (int n, int N, KERNEL_CHOICE KERNEL_input)
 {
 	double out = 0.;
-
+	
 	if (KERNEL_input == JACKSON)
 	{
 		double k = M_PI/(N+1.);

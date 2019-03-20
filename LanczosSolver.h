@@ -6,7 +6,7 @@
 #endif
 
 #ifndef LANCZOS_MAX_ITERATIONS
-#define LANCZOS_MAX_ITERATIONS 15
+#define LANCZOS_MAX_ITERATIONS 2
 #endif
 
 /// \cond
