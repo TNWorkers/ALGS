@@ -23,6 +23,11 @@ double at (const double &x, int i)
 	return x;
 }
 
+void set_el (double &x, int i, const double &xnew)
+{
+	x = xnew;
+}
+
 int size (const ArrayXd &V)
 {
 	return V.rows();
@@ -33,7 +38,12 @@ double at (const ArrayXd &V, int i)
 	return V(i);
 }
 
-template<typename Hamiltonian, typename VectorType>
+void set_el (ArrayXd &V, int i, const double &Vel)
+{
+	V(i) = Vel;
+}
+
+template<typename Hamiltonian, typename VectorType, typename Scalar=double>
 class OrthPolyBase
 {
 public:
@@ -60,8 +70,8 @@ protected:
 	double a, b, alpha, beta;
 	double padding = 0.005;
 	
-	VectorXd  fct (const VectorXd &moments, int Npoints, bool REVERSE=false, KERNEL_CHOICE KERNEL_input=JACKSON);
-	VectorXcd fft (const VectorXd &moments, int Npoints, KERNEL_CHOICE KERNEL_input=JACKSON);
+	vector<Scalar> fct (const vector<Scalar> &moments, int Npoints, bool REVERSE=false, KERNEL_CHOICE KERNEL_input=JACKSON);
+//	VectorXcd fft (const VectorXd &moments, int Npoints, KERNEL_CHOICE KERNEL_input=JACKSON);
 	
 //	double h (int ix, int iy, int iz);
 //	
@@ -73,15 +83,15 @@ protected:
 	size_t dimH;
 };
 
-template<typename Hamiltonian, typename VectorType>
-OrthPolyBase<Hamiltonian,VectorType>::
+template<typename Hamiltonian, typename VectorType, typename Scalar>
+OrthPolyBase<Hamiltonian,VectorType,Scalar>::
 OrthPolyBase(double Emin_input, double Emax_input, double padding_input)
 {
 	set_scalings(Emin_input,Emax_input,padding_input);
 }
 
-template<typename Hamiltonian, typename VectorType>
-OrthPolyBase<Hamiltonian,VectorType>::
+template<typename Hamiltonian, typename VectorType, typename Scalar>
+OrthPolyBase<Hamiltonian,VectorType,Scalar>::
 OrthPolyBase (const Hamiltonian &H, double padding_input)
 {
 	LanczosSolver<Hamiltonian,VectorType,double> Lutz;
@@ -128,8 +138,8 @@ OrthPolyBase (const Hamiltonian &H, double padding_input)
 	set_scalings(Emin,Emax,padding_input);
 }
 
-template<typename Hamiltonian, typename VectorType>
-string OrthPolyBase<Hamiltonian,VectorType>::
+template<typename Hamiltonian, typename VectorType, typename Scalar>
+string OrthPolyBase<Hamiltonian,VectorType,Scalar>::
 baseinfo (string label) const
 {
 	stringstream ss;
@@ -142,8 +152,8 @@ baseinfo (string label) const
 	return ss.str();
 }
 
-template<typename Hamiltonian, typename VectorType>
-inline double OrthPolyBase<Hamiltonian,VectorType>::
+template<typename Hamiltonian, typename VectorType, typename Scalar>
+inline double OrthPolyBase<Hamiltonian,VectorType,Scalar>::
 kernel (int n, int N, KERNEL_CHOICE KERNEL_input)
 {
 	double out = 0.;
@@ -164,8 +174,8 @@ kernel (int n, int N, KERNEL_CHOICE KERNEL_input)
 	return out;
 }
 
-template<typename Hamiltonian, typename VectorType>
-void OrthPolyBase<Hamiltonian,VectorType>::
+template<typename Hamiltonian, typename VectorType, typename Scalar>
+void OrthPolyBase<Hamiltonian,VectorType,Scalar>::
 set_scalings (double Emin_input, double Emax_input, double padding_input)
 {
 	N_mvm = 0;
@@ -190,8 +200,8 @@ set_scalings (double Emin_input, double Emax_input, double padding_input)
 	beta  = -b/a;
 }
 
-//template<typename Hamiltonian, typename VectorType>
-//inline double OrthPolyBase<Hamiltonian,VectorType>::
+//template<typename Hamiltonian, typename VectorType, typename Scalar>
+//inline double OrthPolyBase<Hamiltonian,VectorType,Scalar>::
 //h (int ix, int iy, int iz)
 //{
 //	double res = 1.;
@@ -201,8 +211,8 @@ set_scalings (double Emin_input, double Emax_input, double padding_input)
 //	return res;
 //}
 
-//template<typename Hamiltonian, typename VectorType>
-//void OrthPolyBase<Hamiltonian,VectorType>::
+//template<typename Hamiltonian, typename VectorType, typename Scalar>
+//void OrthPolyBase<Hamiltonian,VectorType,Scalar>::
 //calc_first (const Hamiltonian &H, const VectorType &V0, VectorType &V1)
 //{
 //	HxV(H, V0,V1); ++N_mvm; // V1 = H*V0;
@@ -210,8 +220,8 @@ set_scalings (double Emin_input, double Emax_input, double padding_input)
 //	V1 += beta * V0; // V1 = α·H*V0 + β·V0;
 //}
 
-//template<typename Hamiltonian, typename VectorType>
-//void OrthPolyBase<Hamiltonian,VectorType>::
+//template<typename Hamiltonian, typename VectorType, typename Scalar>
+//void OrthPolyBase<Hamiltonian,VectorType,Scalar>::
 //calc_next (const Hamiltonian &H, VectorType &V0, VectorType &V1)
 //{
 //	VectorType Vtmp = V0;
@@ -222,41 +232,50 @@ set_scalings (double Emin_input, double Emax_input, double padding_input)
 //	swap(V0,V1);
 //}
 
-//template<typename Hamiltonian, typename VectorType>
-//void OrthPolyBase<Hamiltonian,VectorType>::
+//template<typename Hamiltonian, typename VectorType, typename Scalar>
+//void OrthPolyBase<Hamiltonian,VectorType,Scalar>::
 //calc_next (const Hamiltonian &H, const VectorType &V0, const VectorType &V1, VectorType &Vnext)
 //{
 //	HxV(H, V1,Vnext); ++N_mvm; // Vnext = H*V1
 //	Vnext = 2.*alpha*Vnext + 2.*beta*V1 - V0; // Vnext = 2·α·H*V1 + 2·β·V1 - V0;
 //}
 
-template<typename Hamiltonian, typename VectorType>
-VectorXd OrthPolyBase<Hamiltonian,VectorType>::
-fct (const VectorXd &moments, int Npoints, bool REVERSE, KERNEL_CHOICE KERNEL_input)
+template<typename Hamiltonian, typename VectorType, typename Scalar>
+vector<Scalar> OrthPolyBase<Hamiltonian,VectorType,Scalar>::
+fct (const vector<Scalar> &moments, int Npoints, bool REVERSE, KERNEL_CHOICE KERNEL_input)
 {
-	// using Eigen's FFT
-	VectorXcd lambda(Npoints);
-	lambda(0) = moments(0) * kernel(0,moments.rows(),KERNEL_input);
-	for (int n=1; n<moments.rows(); ++n)
+	vector<Scalar> Vout(Npoints); // moments
+	for (int n=0; n<Npoints; ++n)
 	{
-		double phase = (REVERSE==true)? 1. : pow(-1.,n); // when reversing, phases of (-1)^n cancel out
-//		lambda(n) = 2.*moments(n) * kernel(n,moments.rows(),KERNEL_input) * exp(complex<double>(0,-M_PI_2*n/Npoints))*pow(-1.,n);
-		lambda(n) = 2.*moments(n) * kernel(n,moments.rows(),KERNEL_input) * exp(complex<double>(0,-M_PI_2*n/Npoints)) * phase;
+		Vout[n] = moments[0];
+		Vout[n] = 0;
 	}
-	lambda.segment(moments.rows(),Npoints-moments.rows()).setZero();
 	
-	Eigen::FFT<double> FourierTransformer;
-	VectorXcd flambda(Npoints);
-	FourierTransformer.fwd(flambda,lambda);
-	
-	VectorXd Vout(Npoints);
-	for (int j=0; j<Npoints/2; ++j)
+	for (int q=0; q<size(moments[0]); ++q)
 	{
-		Vout(2*j)   = flambda(j).real();
-		Vout(2*j+1) = flambda(Npoints-1-j).real();
+		// using Eigen's FFT
+		VectorXcd lambda(Npoints);
+		lambda(0) = at(moments[0],q) * kernel(0,moments.size(),KERNEL_input);
+		for (int n=1; n<moments.size(); ++n)
+		{
+			double phase = (REVERSE==true)? 1. : pow(-1.,n); // when reversing, phases of (-1)^n cancel out
+	//		lambda(n) = 2.*at(moments(n),q) * kernel(n,moments.size(),KERNEL_input) * exp(complex<double>(0,-M_PI_2*n/Npoints))*pow(-1.,n);
+			lambda(n) = 2.*at(moments[n],q) * kernel(n,moments.size(),KERNEL_input) * exp(complex<double>(0,-M_PI_2*n/Npoints)) * phase;
+		}
+		lambda.segment(moments.size(),Npoints-moments.size()).setZero();
+		
+		Eigen::FFT<double> FourierTransformer;
+		VectorXcd flambda(Npoints);
+		FourierTransformer.fwd(flambda,lambda);
+		
+		for (int j=0; j<Npoints/2; ++j)
+		{
+			set_el(Vout[2*j],q,   flambda(j).real());
+			set_el(Vout[2*j+1],q, flambda(Npoints-1-j).real());
+		}
 	}
 	return Vout;
-
+	
 	// explicitly
 //	cout << "FCT:" << endl;
 //	VectorXd Vout(Npoints);
@@ -296,31 +315,31 @@ fct (const VectorXd &moments, int Npoints, bool REVERSE, KERNEL_CHOICE KERNEL_in
 //	return Vout;
 }
 
-template<typename Hamiltonian, typename VectorType>
-VectorXcd OrthPolyBase<Hamiltonian,VectorType>::
-fft (const VectorXd &moments, int Npoints, KERNEL_CHOICE KERNEL_input)
-{
-	// using Eigen's FFT
-	VectorXcd lambda(Npoints);
-	lambda(0) = moments(0)*kernel(0,moments.rows(),KERNEL_input);
-	for (int n=1; n<moments.rows(); ++n)
-	{
-		lambda(n) = 2.*moments(n) * kernel(n,moments.rows(),KERNEL_input) * exp(complex<double>(0,-M_PI_2*n/Npoints))*pow(-1.,n);
-	}
-	lambda.segment(moments.rows(),Npoints-moments.rows()).setZero();
-	
-	Eigen::FFT<double> FourierTransformer;
-	VectorXcd flambda(Npoints);
-	FourierTransformer.fwd(flambda,lambda);
-	
-	VectorXcd Vout(Npoints);
-	for (int j=0; j<Npoints/2; ++j)
-	{
-		// check this:
-		Vout(2*j)   = flambda(j);
-		Vout(2*j+1) = conj(flambda(Npoints-1-j));
-	}
-	return -complex<double>(0,-M_PI) * Vout;
-}
+//template<typename Hamiltonian, typename VectorType, typename Scalar>
+//VectorXcd OrthPolyBase<Hamiltonian,VectorType,Scalar>::
+//fft (const VectorXd &moments, int Npoints, KERNEL_CHOICE KERNEL_input)
+//{
+//	// using Eigen's FFT
+//	VectorXcd lambda(Npoints);
+//	lambda(0) = moments(0)*kernel(0,moments.rows(),KERNEL_input);
+//	for (int n=1; n<moments.rows(); ++n)
+//	{
+//		lambda(n) = 2.*moments(n) * kernel(n,moments.rows(),KERNEL_input) * exp(complex<double>(0,-M_PI_2*n/Npoints))*pow(-1.,n);
+//	}
+//	lambda.segment(moments.rows(),Npoints-moments.rows()).setZero();
+//	
+//	Eigen::FFT<double> FourierTransformer;
+//	VectorXcd flambda(Npoints);
+//	FourierTransformer.fwd(flambda,lambda);
+//	
+//	VectorXcd Vout(Npoints);
+//	for (int j=0; j<Npoints/2; ++j)
+//	{
+//		// check this:
+//		Vout(2*j)   = flambda(j);
+//		Vout(2*j+1) = conj(flambda(Npoints-1-j));
+//	}
+//	return -complex<double>(0,-M_PI) * Vout;
+//}
 
 #endif

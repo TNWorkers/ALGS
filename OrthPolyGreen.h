@@ -13,13 +13,13 @@
 #include "Stopwatch.h" // from TOOLS
 
 template<typename Hamiltonian, typename VectorType, typename Scalar=double, ORTHPOLY P=CHEBYSHEV>
-class OrthPolyGreen : public OrthPolyBase<Hamiltonian,VectorType>
+class OrthPolyGreen : public OrthPolyBase<Hamiltonian,VectorType,Scalar>
 {
 public:
 	
 	OrthPolyGreen() {};
-	OrthPolyGreen (const Hamiltonian &H, double padding_input=0.005);
-	OrthPolyGreen (double Emin_input, double Emax_input, double padding_input=0.005);
+	OrthPolyGreen (const Hamiltonian &H, bool VERBOSE_input = true, double padding_input=0.005);
+	OrthPolyGreen (double Emin_input, double Emax_input, bool VERBOSE_input = true, double padding_input=0.005);
 	
 	string info() const;
 	
@@ -44,9 +44,9 @@ public:
 	void save_ImAA (int Msave, string dumpfile, ArrayXd Eoffset, bool REVERSE=false, KERNEL_CHOICE KERNEL=JACKSON);
 //	void save_ImAAderiv (int Msave, string datfile, double Eoffset, bool REVERSE, KERNEL_CHOICE KERNEL=JACKSON);
 	void save_ImAAmoments (string momfile, int Msave_input=-1);
-	void inject_ImAAmoments (const VectorXd ImAAmoments_input);
+	void inject_ImAAmoments (const vector<Scalar> ImAAmoments_input);
 	MatrixXd get_ImAA (int Msave, double Eoffset=0., bool REVERSE=false, KERNEL_CHOICE KERNEL=JACKSON);
-	VectorXd get_ImAAmoments() {return ImAAmoments;}
+	vector<Scalar> get_ImAAmoments() {return ImAAmoments;}
 	
 	void save_ImAB (int Msave, string datfile, ArrayXd Eoffset, bool REVERSE=false, KERNEL_CHOICE KERNEL=JACKSON);
 	void save_ImABmoments (string momfile, int Msave_input=-1);
@@ -64,8 +64,9 @@ private:
 	list<tuple<int,string,string,ArrayXd,bool,KERNEL_CHOICE> > savepoints;
 	
 	int M;
-	VectorXd ImAAmoments;
+	vector<Scalar> ImAAmoments;
 	bool GOT_MOMENTS = false;
+	bool VERBOSE = true;
 	
 	vector<vector<Scalar> > ImABmoments;
 	int Asize;
@@ -73,14 +74,14 @@ private:
 
 template<typename Hamiltonian, typename VectorType, typename Scalar, ORTHPOLY P>
 OrthPolyGreen<Hamiltonian,VectorType,Scalar,P>::
-OrthPolyGreen (const Hamiltonian &H, double padding_input)
-:OrthPolyBase<Hamiltonian,VectorType>(H,padding_input), GOT_MOMENTS(false)
+OrthPolyGreen (const Hamiltonian &H, bool VERBOSE_input, double padding_input)
+:OrthPolyBase<Hamiltonian,VectorType,Scalar>(H,padding_input), VERBOSE(VERBOSE_input), GOT_MOMENTS(false)
 {}
 
 template<typename Hamiltonian, typename VectorType, typename Scalar, ORTHPOLY P>
 OrthPolyGreen<Hamiltonian,VectorType,Scalar,P>::
-OrthPolyGreen (double Emin_input, double Emax_input, double padding_input)
-:OrthPolyBase<Hamiltonian,VectorType>(Emin_input,Emax_input,padding_input), GOT_MOMENTS(false)
+OrthPolyGreen (double Emin_input, double Emax_input, bool VERBOSE_input, double padding_input)
+:OrthPolyBase<Hamiltonian,VectorType,Scalar>(Emin_input,Emax_input,padding_input), VERBOSE(VERBOSE_input), GOT_MOMENTS(false)
 {}
 
 template<typename Hamiltonian, typename VectorType, typename Scalar, ORTHPOLY P>
@@ -127,17 +128,20 @@ calc_ImAA (Hamiltonian &H, const VectorType &AxV, int M_input, bool USE_IDENTITI
 	}
 	
 	ImAAmoments.resize(M);
-	ImAAmoments.setZero();
+	for (size_t n=0; n<M; ++n)
+	{
+		ImAAmoments[n] = 0;
+	}
 	
-	lout << "****** -1/π Im≪A†;A≫(ω) iteration: " << "0+1" << " ******" << endl;
+	if (VERBOSE) lout << "****** -1/π Im≪A†;A≫(ω) iteration: " << "0+1" << " ******" << endl;
 	
 	VectorType V0 = AxV;
 	VectorType V1;
 	H.scale(this->alpha,this->beta); // H = α·H+β
 	HxV(H,V0,V1); ++this->N_mvm; // V1 = H·V0;
 	
-	ImAAmoments(0) = dot_green(V0,V0);
-	ImAAmoments(1) = dot_green(V0,V1);
+	ImAAmoments[0] = dot_green(V0,V0);
+	ImAAmoments[1] = dot_green(V0,V1);
 	
 	H.scale(OrthPoly<P>::C(1)); // H = C_n·(α·H+β)
 	
@@ -145,21 +149,21 @@ calc_ImAA (Hamiltonian &H, const VectorType &AxV, int M_input, bool USE_IDENTITI
 	int range = (USE_IDENTITIES==true)? M/2 : M-1;
 	for (int n=1; n<range; ++n)
 	{
-		lout << "****** -1/π Im≪A†;A≫(ω) iteration: " << 1+n << " / " << range << " ******" << endl;
+		if (VERBOSE) lout << "****** -1/π Im≪A†;A≫(ω) iteration: " << 1+n << " / " << range << " ******" << endl;
 		
 		H.scale(OrthPoly<P>::C(n+1)/OrthPoly<P>::C(n)); // H = C_{n+1}·(α·H+β)
-		polyIter(H,V1,OrthPoly<P>::B(n+1),V0,Vtmp); ++this->N_mvm; // Vtmp = C_{n+1}(α·H+β)·V1 - B_{n+1}·V0
+		polyIter(H,V1,OrthPoly<P>::B(n+1),V0,Vtmp,VERBOSE); ++this->N_mvm; // Vtmp = C_{n+1}(α·H+β)·V1 - B_{n+1}·V0
 		V0 = V1; // V0 = V_{n-1}
 		V1 = Vtmp; // V1 = V_{n}
 		
 		if (USE_IDENTITIES == true)
 		{
-			ImAAmoments(2*n)   = 2.*dot_green(V0,V0)-ImAAmoments(0);
-			ImAAmoments(2*n+1) = 2.*dot_green(V1,V0)-ImAAmoments(1);
+			ImAAmoments[2*n]   = 2.*dot_green(V0,V0)-ImAAmoments[0];
+			ImAAmoments[2*n+1] = 2.*dot_green(V1,V0)-ImAAmoments[1];
 		}
 		else
 		{
-			ImAAmoments(n+1) = dot_green(AxV,V1);
+			ImAAmoments[n+1] = dot_green(AxV,V1);
 		}
 		
 		//----<saving>----
@@ -186,8 +190,11 @@ calc_ImAA (Hamiltonian &H, const VectorType &AxV, int M_input, bool USE_IDENTITI
 		}
 		//----</saving>----
 		
-		lout << TotalTimer.info("Chebyshev iteration total",false) << endl;
-		lout << endl;
+		if (VERBOSE)
+		{
+			lout << TotalTimer.info("Chebyshev iteration total",false) << endl;
+			lout << endl;
+		}
 	}
 	
 	H.scale(this->a/OrthPoly<P>::C(range),this->b);
@@ -200,7 +207,6 @@ template<typename Hamiltonian, typename VectorType, typename Scalar, ORTHPOLY P>
 //template<typename StateIterator>
 void OrthPolyGreen<Hamiltonian,VectorType,Scalar,P>::
 calc_ImAB (Hamiltonian &H, const vector<VectorType> &AxV, const VectorType &BxV, int M_input)
-//calc_ImAB (Hamiltonian &H, StateIterator &AxV, const VectorType &BxV, int M_input)
 {
 	Stopwatch<> TotalTimer;
 	M = M_input;
@@ -217,7 +223,7 @@ calc_ImAB (Hamiltonian &H, const vector<VectorType> &AxV, const VectorType &BxV,
 		}
 	}
 	
-	lout << "****** -1/π Im≪A;B≫(ω) iteration: " << "0+1" << " ******" << endl;
+	if (VERBOSE) lout << "****** -1/π Im≪A;B≫(ω) iteration: " << "0+1" << " ******" << endl;
 	
 	VectorType V0 = BxV;
 	VectorType V1;
@@ -235,10 +241,10 @@ calc_ImAB (Hamiltonian &H, const vector<VectorType> &AxV, const VectorType &BxV,
 	VectorType Vtmp;
 	for (int n=1; n<M-1; ++n)
 	{
-		lout << "****** -1/π Im≪A;B≫(ω) iteration: " << 1+n << " / " << M-1 << " ******" << endl;
+		if (VERBOSE) lout << "****** -1/π Im≪A;B≫(ω) iteration: " << 1+n << " / " << M-1 << " ******" << endl;
 		
 		H.scale(OrthPoly<P>::C(n+1)/OrthPoly<P>::C(n)); // H = A_{n+1}·(α·H+β)
-		polyIter(H,V1,OrthPoly<P>::B(n+1),V0,Vtmp); ++this->N_mvm; // Vtmp = A_{n+1}(α·H+β)·V1 - B_{n+1}·V0
+		polyIter(H,V1,OrthPoly<P>::B(n+1),V0,Vtmp,VERBOSE); ++this->N_mvm; // Vtmp = A_{n+1}(α·H+β)·V1 - B_{n+1}·V0
 		V0 = V1; // V0 = V_{n-1}
 		V1 = Vtmp; // V1 = V_{n}
 		
@@ -258,8 +264,11 @@ calc_ImAB (Hamiltonian &H, const vector<VectorType> &AxV, const VectorType &BxV,
 		}
 		//----</save>----
 		
-		lout << TotalTimer.info("Chebyshev iteration total",false) << endl;
-		lout << endl;
+		if (VERBOSE)
+		{
+			lout << TotalTimer.info("Chebyshev iteration total",false) << endl;
+			lout << endl;
+		}
 	}
 	H.scale(this->a/OrthPoly<P>::C(M),this->b);
 	
@@ -312,34 +321,44 @@ save_ImAA (int Msave, string datfile, ArrayXd Eoffset, bool REVERSE, KERNEL_CHOI
 //	}
 //	datfiler.close();
 	
-	ofstream datfiler(datfile);
+//	ofstream datfiler(datfile);
 	
-	if (P == CHEBYSHEV)
+	int qsize = Eoffset.size();
+	
+	for (int q=0; q<qsize; ++q)
 	{
-		IntervalIterator Eit(-1.,+1.,Epoints,ChebyshevAbscissa);
-		VectorXd ImAAgamma = this->fct(ImAAmoments.head(Msave),Epoints,REVERSE,KERNEL);
-		for (Eit=Eit.begin(); Eit<Eit.end(); ++Eit)
+		string datfile_tmp = datfile;
+		if (qsize > 1) datfile_tmp += make_string(".q",q);
+		ofstream datfiler(datfile_tmp);
+		
+		if (P == CHEBYSHEV)
 		{
-			if (abs(*Eit) < 1.-this->padding)
+			IntervalIterator Eit(-1.,+1.,Epoints,ChebyshevAbscissa);
+			vector<Scalar> ImAAmomentsHead(ImAAmoments.begin(), ImAAmoments.begin()+Msave);
+			vector<Scalar> ImAAgamma = this->fct(ImAAmomentsHead, Epoints, REVERSE, KERNEL);
+			for (Eit=Eit.begin(); Eit<Eit.end(); ++Eit)
 			{
-				datfiler << a*(*Eit)+b-Eoffset(0) << "\t" << ImAAgamma(Eit.index())*OrthPoly<P>::w(*Eit)/abs(a) << endl;
+				if (abs(*Eit) < 1.-this->padding)
+				{
+					datfiler << a*(*Eit)+b-Eoffset(q) << "\t" << ImAAgamma[Eit.index()] * OrthPoly<P>::w(*Eit)/abs(a) << endl;
+				}
 			}
 		}
+//		else
+//		{
+//			IntervalIterator x(-1.,+1.,Epoints);
+//			for (x=x.begin(); x<x.end(); ++x)
+//			{
+//				if (abs(*x) < 1.-this->padding)
+//				{
+//					datfiler << a*(*x)+b-Eoffset(q) << "\t" << evaluate_ImAA_scaled(*x,Msave,REVERSE,KERNEL) << endl;
+//				}
+//			}
+//		}
+		datfiler.close();
+		
+		if (VERBOSE) lout << datfile << " done!" << endl;
 	}
-	else
-	{
-		IntervalIterator x(-1.,+1.,Epoints);
-		for (x=x.begin(); x<x.end(); ++x)
-		{
-			if (abs(*x) < 1.-this->padding)
-			{
-				datfiler << a*(*x)+b-Eoffset(0) << "\t" << evaluate_ImAA_scaled(*x,Msave,REVERSE,KERNEL) << endl;
-			}
-		}
-	}
-	datfiler.close();
-	
-	lout << datfile << " done!" << endl;
 }
 
 template<typename Hamiltonian, typename VectorType, typename Scalar, ORTHPOLY P>
@@ -439,7 +458,7 @@ save_ImAB (int Msave, string datfile, ArrayXd Eoffset, bool REVERSE, KERNEL_CHOI
 //	target.close();
 //	#endif
 	
-	lout << datfile << " done!, qsize=" << qsize << endl;
+	if (VERBOSE) lout << datfile << " done!, qsize=" << qsize << endl;
 }
 
 //template<typename Hamiltonian, typename VectorType, typename Scalar, ORTHPOLY P>
@@ -470,30 +489,41 @@ save_ImAB (int Msave, string datfile, ArrayXd Eoffset, bool REVERSE, KERNEL_CHOI
 ////	}
 ////	datfiler.close();
 //	
-//	lout << datfile << " done!" << endl;
+//	if (VERBOSE) lout << datfile << " done!" << endl;
 //}
 
 template<typename Hamiltonian, typename VectorType, typename Scalar, ORTHPOLY P>
 void OrthPolyGreen<Hamiltonian,VectorType,Scalar,P>::
 save_ImAAmoments (string momfile, int Msave_input)
 {
-	ofstream fout(momfile);
-	int Msave = (Msave_input==-1)? ImAAmoments.rows() : Msave_input;
+//	ofstream fout(momfile);
+	int Msave = (Msave_input==-1)? ImAAmoments.size() : Msave_input;
 	
-	for (size_t n=0; n<Msave; ++n)
+	for (int q=0; q<size(ImAAmoments[0]); ++q)
 	{
-		fout << setprecision(13) << ImAAmoments(n) << endl;
+		string momfile_tmp = momfile;
+		if (size(ImAAmoments[0]) > 1)
+		{
+			momfile_tmp += make_string(".q",q);
+		}
+		
+		ofstream fout(momfile_tmp);
+		
+		for (size_t n=0; n<Msave; ++n)
+		{
+			fout << setprecision(13) << ImAAmoments[n] << endl;
+		}
+		fout.close();
 	}
 	
-	fout.close();
-	lout << momfile << " done!" << endl;
+	if (VERBOSE) lout << momfile << " done!" << endl;
 }
 
 template<typename Hamiltonian, typename VectorType, typename Scalar, ORTHPOLY P>
 void OrthPolyGreen<Hamiltonian,VectorType,Scalar,P>::
 save_ImABmoments (string momfile, int Msave_input)
 {
-	ofstream fout(momfile);
+//	ofstream fout(momfile);
 //	int Msave = (Msave_input==-1)? ImAAmoments.rows() : Msave_input;
 	int Msave = (Msave_input==-1)? ImABmoments.size() : Msave_input;
 	
@@ -504,7 +534,7 @@ save_ImABmoments (string momfile, int Msave_input)
 		{
 			momfile_tmp += make_string(".q",q);
 		}
-		ofstream datfiler(momfile_tmp);
+		ofstream fout(momfile_tmp);
 		
 		for (size_t n=0; n<Msave; ++n)
 		{
@@ -514,10 +544,10 @@ save_ImABmoments (string momfile, int Msave_input)
 			}
 			fout << endl;
 		}
+		fout.close();
 	}
 	
-	fout.close();
-	lout << momfile << " done!, qsize=" << size(ImABmoments[0][0]) << endl;
+	if (VERBOSE) lout << momfile << " done!, qsize=" << size(ImABmoments[0][0]) << endl;
 }
 
 template<typename Hamiltonian, typename VectorType, typename Scalar, ORTHPOLY P>
@@ -525,7 +555,7 @@ inline double OrthPolyGreen<Hamiltonian,VectorType,Scalar,P>::
 ImAAarea (KERNEL_CHOICE KERNEL)
 {
 	assert(GOT_MOMENTS == true and P==CHEBYSHEV);
-	VectorXd ImAAgamma = this->fct(ImAAmoments,ImAAmoments.rows(),false,KERNEL);
+	vector<Scalar> ImAAgamma = this->fct(ImAAmoments,ImAAmoments.rows(),false,KERNEL);
 	return ImAAgamma.sum()/ImAAmoments.rows();
 }
 
@@ -585,7 +615,7 @@ evaluate_ImAA_scaled (double x, int Msave_input, bool REVERSE, KERNEL_CHOICE KER
 	if (x<-1. or x>1.) {return 0.;}
 	else
 	{
-		int Msave = (Msave_input==-1)? ImAAmoments.rows() : Msave_input;
+		int Msave = (Msave_input==-1)? ImAAmoments.size() : Msave_input;
 		double a=this->a; double b=this->b;
 		
 		double res = OrthPoly<P>::orthfac(0) * ImAAmoments(0) * this->kernel(0,Msave,KERNEL) * OrthPoly<P>::eval(0,x);
@@ -672,7 +702,7 @@ ImAAintegral (double (*f)(double), int Msave, double Eoffset, bool REVERSE, KERN
 	assert(GOT_MOMENTS == true and Msave <= M and P==CHEBYSHEV);
 	double Emin=this->Emin; double Emax=this->Emax;
 	
-	VectorXd ImAAgamma = this->fct(ImAAmoments,Msave,REVERSE,KERNEL);
+	vector<Scalar> ImAAgamma = this->fct(ImAAmoments,Msave,REVERSE,KERNEL);
 	IntervalIterator Eit(Emin-Eoffset,Emax-Eoffset,Msave,ChebyshevAbscissa);
 	
 	return (ImAAgamma.cwiseProduct(Eit.get_values().unaryExpr(std::ptr_fun(f)))).sum();
@@ -725,7 +755,7 @@ get_ImAA (int Msave, double Eoffset, bool REVERSE, KERNEL_CHOICE KERNEL)
 
 template<typename Hamiltonian, typename VectorType, typename Scalar, ORTHPOLY P>
 void OrthPolyGreen<Hamiltonian,VectorType,Scalar,P>::
-inject_ImAAmoments (const VectorXd ImAAmoments_input)
+inject_ImAAmoments (const vector<Scalar> ImAAmoments_input)
 {
 	ImAAmoments = ImAAmoments_input;
 	GOT_MOMENTS = true;

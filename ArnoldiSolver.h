@@ -25,7 +25,7 @@ public:
 private:
 	
 	size_t dimA, dimK, dimKc;
-	double error=1.;
+	double error = 1.;
 	size_t N_iter;
 	double tol;
 	
