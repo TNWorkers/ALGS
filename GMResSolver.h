@@ -12,9 +12,9 @@ public:
 	
 	GMResSolver(){};
 	
-	GMResSolver (const MatrixType &A, const VectorType &b, VectorType &x, double tol=1e-14);
+	GMResSolver (const MatrixType &A, const VectorType &b, VectorType &x, double tol=1e-10);
 	
-	void solve_linear (const MatrixType &A, const VectorType &b, VectorType &x, double tol=1e-14, bool START_FROM_RANDOM=true);
+	void solve_linear (const MatrixType &A, const VectorType &b, VectorType &x, double tol=1e-10, bool START_FROM_RANDOM=true);
 	
 	void set_dimK (size_t dimK_input);
 	
