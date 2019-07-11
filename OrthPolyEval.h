@@ -74,12 +74,13 @@ double ChebyshevExpansion (double x, const Eigen::VectorXd &c)
 	return y1-x*y2;
 }
 
-enum ORTHPOLY {CHEBYSHEV, LEGENDRE};
+enum ORTHPOLY {CHEBYSHEV, CHEBYSHEV2, LEGENDRE};
 
 std::ostream& operator<< (std::ostream& s, ORTHPOLY P)
 {
-	if      (P==CHEBYSHEV) {s << "Chebyshev";}
-	else if (P==LEGENDRE)  {s << "Legendre";}
+	if      (P==CHEBYSHEV)  {s << "Chebyshev";}
+	else if (P==CHEBYSHEV2) {s << "Chebyshev 2nd kind";}
+	else if (P==LEGENDRE)   {s << "Legendre";}
 	return s;
 }
 
@@ -109,9 +110,9 @@ double OrthPoly<P>::
 eval (int n, double x)
 {
 	if      (n==0) {return 1.;}
-	else if (n==1) {return x;}
+	else if (n==1) {return (P==CHEBYSHEV2)? 2.*x:x;}
 	
-	double pm1 = x;
+	double pm1 = (P==CHEBYSHEV2)? 2.*x:x;
 	double pm2 = 1.;
 	double p = pm1;
 	
@@ -159,6 +160,43 @@ evalFT (int n, double t)
 {
 	return pow(-1.i,n) * boost::math::cyl_bessel_j(n,t);
 }
+
+//---- Chebyshev 2nd kind----
+template<>
+inline double OrthPoly<CHEBYSHEV2>::
+C (int n)
+{
+	return 2.;
+}
+
+template<>
+inline double OrthPoly<CHEBYSHEV2>::
+B (int n)
+{
+	return 1.;
+}
+
+template<>
+inline double OrthPoly<CHEBYSHEV2>::
+orthfac (int n)
+{
+	return 2.;
+}
+
+template<>
+inline double OrthPoly<CHEBYSHEV2>::
+w (double x)
+{
+	return M_1_PI*sqrt(1.-x*x);
+}
+
+// Analytical FT of U_n? (Chebyshev polynomials of 2nd kind)
+//template<>
+//inline complex<double> OrthPoly<CHEBYSHEV2>::
+//evalFT (int n, double t)
+//{
+//	return pow(-1.i,n) * boost::math::cyl_bessel_j(n,t);
+//}
 
 //---- Legendre ----
 template<>

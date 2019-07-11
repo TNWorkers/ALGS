@@ -38,6 +38,7 @@ public:
 	double evaluate_ImAA_scaled (double x, int Msave_input, bool REVERSE=false, KERNEL_CHOICE KERNEL=JACKSON);
 //	Scalar evaluate_ImAA_deriv (double E, int Msave_input, double Eoffset, bool REVERSE, KERNEL_CHOICE KERNEL=JACKSON);
 	Scalar evaluate_ImAB (int i, double E, int Msave_input=-1, double Eoffset=0., bool REVERSE=false, KERNEL_CHOICE KERNEL=JACKSON);
+	Scalar evaluate_ReGAB (int i, double E, int Msave_input=-1, double Eoffset=0., bool REVERSE=false, KERNEL_CHOICE KERNEL=JACKSON);
 	double evaluate_ImAA_Chebyshev (double E, int Msave=-1, double Eoffset=0., bool REVERSE=false, KERNEL_CHOICE KERNEL=JACKSON);
 	double ImAAselfconv (double y, int Msave=-1, double Eoffset=0., bool REVERSE=false, KERNEL_CHOICE KERNEL=JACKSON);
 	
@@ -565,6 +566,7 @@ ImAAarea (KERNEL_CHOICE KERNEL)
 }
 
 // using normal recurrence
+// evaluates -1/pi*ImReG
 template<typename Hamiltonian, typename VectorType, typename Scalar, ORTHPOLY P>
 Scalar OrthPolyGreen<Hamiltonian,VectorType,Scalar,P>::
 evaluate_ImAA (double E, int Msave_input, double Eoffset, bool REVERSE, KERNEL_CHOICE KERNEL)
@@ -618,6 +620,7 @@ evaluate_ImAA (double E, int Msave_input, double Eoffset, bool REVERSE, KERNEL_C
 //}
 
 // using normal recurrence
+// evaluates -1/pi*ImReG
 template<typename Hamiltonian, typename VectorType, typename Scalar, ORTHPOLY P>
 double OrthPolyGreen<Hamiltonian,VectorType,Scalar,P>::
 evaluate_ImAA_scaled (double x, int Msave_input, bool REVERSE, KERNEL_CHOICE KERNEL)
@@ -639,6 +642,7 @@ evaluate_ImAA_scaled (double x, int Msave_input, bool REVERSE, KERNEL_CHOICE KER
 }
 
 // using Clenshaw recurrence
+// evaluates -1/pi*ImReG
 template<typename Hamiltonian, typename VectorType, typename Scalar, ORTHPOLY P>
 double OrthPolyGreen<Hamiltonian,VectorType,Scalar,P>::
 evaluate_ImAA_Chebyshev (double E, int Msave_input, double Eoffset, bool REVERSE, KERNEL_CHOICE KERNEL)
@@ -690,6 +694,7 @@ evaluate_ImAA_Chebyshev (double E, int Msave_input, double Eoffset, bool REVERSE
 //}
 
 // using Chebyshev recurrence
+// evaluates -1/pi*ImReG
 template<typename Hamiltonian, typename VectorType, typename Scalar, ORTHPOLY P>
 Scalar OrthPolyGreen<Hamiltonian,VectorType,Scalar,P>::
 evaluate_ImAB (int i, double E, int Msave_input, double Eoffset, bool REVERSE, KERNEL_CHOICE KERNEL)
@@ -708,6 +713,29 @@ evaluate_ImAB (int i, double E, int Msave_input, double Eoffset, bool REVERSE, K
 	}
 	
 	return res*OrthPoly<P>::w(E_scaled)/abs(a);
+}
+
+// using Chebyshev recurrence
+// evaluates ReG
+template<typename Hamiltonian, typename VectorType, typename Scalar, ORTHPOLY P>
+Scalar OrthPolyGreen<Hamiltonian,VectorType,Scalar,P>::
+evaluate_ReGAB (int i, double E, int Msave_input, double Eoffset, bool REVERSE, KERNEL_CHOICE KERNEL)
+{
+	assert(P == CHEBYSHEV);
+	
+	int Msave = (Msave_input==-1)? ImABmoments[i].size() : Msave_input;
+	double a=this->a; double b=this->b;
+	
+	double E_scaled = (E+Eoffset-b)/a;
+	
+	Scalar res = -2. * ImABmoments[i][1] * this->kernel(1,Msave,KERNEL) * OrthPoly<CHEBYSHEV2>::eval(0,E_scaled);
+	for (int n=2; n<Msave; ++n)
+	{
+		double phase = (REVERSE==true)? pow(-1.,n) : 1.;
+		res += -2. * ImABmoments[i][n] * this->kernel(n,Msave,KERNEL) * phase * OrthPoly<CHEBYSHEV2>::eval(n-1,E_scaled);
+	}
+	
+	return res/abs(a);
 }
 
 template<typename Hamiltonian, typename VectorType, typename Scalar, ORTHPOLY P>
