@@ -15,6 +15,7 @@
 //#include "InterpolGSL.h"
 #include "gsl/gsl_sf_gamma.h"
 //#include "trigfactor.h"
+#include "Stopwatch.h"
 
 double ChebyshevT (int n, double x)
 {
@@ -144,7 +145,7 @@ ChebyshevTransformer::
 ChebyshevTransformer (double (*f_input)(double), double xmin_input, double xmax_input)
 :f(f_input), xmin(xmin_input), xmax(xmax_input), GOT_CHEBINTERPOL(false)
 {
-	N_moments = pow(2,10);
+	N_moments = pow(2,17);
 	stored_moments.resize(N_moments);
 	stored_moments.setZero();
 	
@@ -167,6 +168,7 @@ compute_moments_by_fct1dim()
 //		cout << "root: " << sqrt(1.-x_scaled*x_scaled) << endl;
 	}
 	
+//	// using FFTW
 //	#ifndef CHEBTRANS_DONT_USE_FFTWOMP
 //	int fftw_init_threads(void);
 //	fftw_plan_with_nthreads(omp_get_max_threads());
@@ -177,16 +179,25 @@ compute_moments_by_fct1dim()
 //	#ifndef CHEBTRANS_DONT_USE_FFTWOMP
 //	void fftw_cleanup_threads(void);
 //	#endif
-	VectorXd fct(N_moments); fct.setZero();
-	for (int k=0; k<N_moments; ++k)
-	{
-		for (int j=0; j<N_moments; ++j)
-		{
-			fct(k) += 2. * stored_moments(j) * cos(M_PI*(j+0.5)*k/N_moments);
-		}
-	}
-	stored_moments = fct;
 	
+//	// explicit:
+//	VectorXd fct(N_moments); fct.setZero();
+//	for (int k=0; k<N_moments; ++k)
+//	for (int j=0; j<N_moments; ++j)
+//	{
+//		fct(k) += 2. * stored_moments(j) * cos(M_PI*(j+0.5)*k/N_moments);
+//	}
+	
+	// using FFT
+	Eigen::FFT<double> fft;
+	VectorXd lambda(2*N_moments); lambda.setZero();
+	lambda.head(N_moments) = stored_moments;
+	VectorXcd flambda(2*N_moments);
+	fft.fwd(flambda,lambda);
+	for (int k=0; k<N_moments; ++k) flambda(k) *= 2. * exp(-1.i*M_PI*double(k)/double(2.*N_moments));
+	VectorXd fct = flambda.head(N_moments).real();
+	
+	stored_moments = fct;
 	for (int n=1; n<N_moments; n+=2) {stored_moments(n) *= -1.;}
 	stored_moments *= M_PI_2/N_moments;
 	//Chronos.check("moments");

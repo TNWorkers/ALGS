@@ -42,7 +42,7 @@ public:
 	
 	int order (int n);
 	
-	Eigen::VectorXd get_abscissa (double xmin, double xmax, int xpoints)
+	Eigen::ArrayXd get_abscissa (double xmin, double xmax, int xpoints)
 	{
 		Eigen::VectorXd Vout(xpoints);
 		for (int i=0; i<xpoints; ++i)
@@ -52,7 +52,7 @@ public:
 		return Vout;
 	}
 	
-	Eigen::VectorXd get_steps (double xmin, double xmax, int xpoints)
+	Eigen::ArrayXd get_steps (double xmin, double xmax, int xpoints)
 	{
 		Eigen::VectorXd x = get_abscissa(xmin,xmax,xpoints);
 		
@@ -66,7 +66,7 @@ public:
 		return Vout;
 	}
 	
-	Eigen::VectorXd get_weights (double xmin, double xmax, int xpoints)
+	Eigen::ArrayXd get_weights (double xmin, double xmax, int xpoints)
 	{
 		Eigen::VectorXd Vout(xpoints);
 		for (int i=0; i<xpoints; ++i)

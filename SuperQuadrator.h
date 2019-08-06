@@ -32,7 +32,8 @@ SuperQuadrator<qrule>::
 SuperQuadrator (double (*w)(double), double xmin, double xmax, int xpoints)
 {
 	ChebyshevTransformer Charlie(w,xmin,xmax);
-	if (xpoints<=60)
+//	if (xpoints<=60)
+	if (xpoints<=30)
 	{
 		Charlie.compute_recursionCoefficients_GanderKarp<qrule>(xpoints);
 	}
