@@ -2,10 +2,13 @@
 #define TRIDIAGONALEIGENSOLVER
 
 #include <Eigen/Dense>
+//#include "util/LapackManager.h"
 
-/*extern "C" void dstev_ (const char* JOBZ, const int* N, double* D, double* E, double *Z, int* LDZ, double* WORK, int* INFO);*/
-/*extern "C" void dstein_ (const int* N, const double* D, const double* E, const int* M, const double* W, const int* IBLOCK, const int* ISPLIT, double* Z, const int* LDZ, double* WORK, int* IWORK, int* IFAIL, int* INFO);*/
-/*// compile with -llapack*/
+#ifndef EIGEN_USE_LAPACKE
+extern "C" void dstev_ (const char* JOBZ, const int* N, double* D, double* E, double *Z, int* LDZ, double* WORK, int* INFO);
+extern "C" void dstein_ (const int* N, const double* D, const double* E, const int* M, const double* W, const int* IBLOCK, const int* ISPLIT, double* Z, const int* LDZ, double* WORK, int* IWORK, int* IFAIL, int* INFO);
+/* compile with -llapack*/
+#endif
 
 class TridiagonalEigensolver
 {

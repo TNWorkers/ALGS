@@ -748,7 +748,7 @@ ImAAintegral (double (*f)(double), int Msave, double Eoffset, bool REVERSE, KERN
 	vector<Scalar> ImAAgamma = this->fct(ImAAmoments,Msave,REVERSE,KERNEL);
 	IntervalIterator Eit(Emin-Eoffset,Emax-Eoffset,Msave,ChebyshevAbscissa);
 	
-	return (ImAAgamma.cwiseProduct(Eit.get_values().unaryExpr(std::ptr_fun(f)))).sum();
+	return (ImAAgamma.cwiseProduct(Eit.get_abscissa().unaryExpr(std::ptr_fun(f)))).sum();
 }
 
 // \int A(x)*A(y-x)dx
