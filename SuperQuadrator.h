@@ -42,20 +42,31 @@ SuperQuadrator (double (*w)(double), double xmin, double xmax, int xpoints)
 		Charlie.compute_recursionCoefficients_modChebyshev(xpoints);
 	}
 	
+	VectorXd alpha = Charlie.alpha();
+	VectorXd beta = Charlie.beta();
+	if (isnan(alpha(alpha.rows()-1)) or isnan(beta(beta.rows()-1)))
+	{
+		int last_good_val = min(int(alpha.rows()-1),499);
+		alpha.tail(alpha.rows()-last_good_val).setConstant(alpha(last_good_val));
+		beta.tail (alpha.rows()-last_good_val).setConstant(beta (last_good_val));
+		lout << "Had to correct an instability in the calculation of the integration weights, please carefully check the result!" << endl;
+	}
+	
 	// using Eigen
 	Eigen::MatrixXd Jacobi(xpoints,xpoints);
 	Jacobi.setZero();
 	for (int k=0; k<xpoints-1; ++k)
 	{
-		Jacobi(k,k)   = Charlie.alpha()(k);
-		Jacobi(k,k+1) = sqrt(Charlie.beta()(k+1));
+		Jacobi(k,k)   = alpha(k);
+		Jacobi(k,k+1) = sqrt(beta(k+1));
 		Jacobi(k+1,k) = Jacobi(k,k+1);
+//		cout << "k=" << k << ", alpha=" << alpha(k) << ", beta=" << beta(k) << endl;
 	}
-	Jacobi(xpoints-1,xpoints-1) =  Charlie.alpha()(xpoints-1);
+	Jacobi(xpoints-1,xpoints-1) = alpha(xpoints-1);
 	
 	Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> Eugen(Jacobi);
 	points = Eugen.eigenvalues();
-	weights = Charlie.beta()(0)*Eugen.eigenvectors().row(0).array().square().matrix();
+	weights = beta(0)*Eugen.eigenvectors().row(0).array().square().matrix();
 	
 //	// using LAPACK
 //	VectorXd Jacobi_diag(xpoints);
