@@ -57,6 +57,7 @@ public:
 	virtual string info() const;
 	double calc_memory (const Hamiltonian &H, MEMUNIT memunit=GB) const;
 	int mvms() const {return stat.N_mvm;};
+	inline double get_deltaE() const {return deltaE;};
 	//--------</info>--------
 	
 	//--------<force params>--------
@@ -95,6 +96,7 @@ public:
 	double next_b;
 	VectorType next_K;
 	void calc_next_ab (const Hamiltonian &H);
+	double deltaE;
 	
 	//--------------<Krylov space>--------------
 	SelfAdjointEigenSolver<MatrixXd> KrylovSolver;
@@ -384,6 +386,8 @@ iteration (const Hamiltonian &H, const VectorType &u)
 		VectorType w;
 		HxV(H,Kbasis[0],w); ++stat.N_mvm;
 		a(0) = isReal(dot(w,Kbasis[0]));
+		
+		deltaE = abs(dot(w,w)-pow(a(0),2));
 		
 		// step: 1
 		w -= a(0) * Kbasis[0];

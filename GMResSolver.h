@@ -47,7 +47,8 @@ info() const
 //	<< " dimA=" << dimA
 	<< " dimKmax=" << dimK
 	<< ", dimK=" << dimKc
-	<< ", iterations=" << N_iterations;
+	<< ", iterations=" << N_iterations
+	<< ", MVMs=" << (N_iterations-1)*dimK+dimKc;
 	if (N_iterations == GMRES_MAX_ITERATIONS)
 	{
 		ss << ", breakoff after max.iterations";
