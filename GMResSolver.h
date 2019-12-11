@@ -5,6 +5,8 @@
 #define GMRES_MAX_ITERATIONS 10
 #endif
 
+#include "numeric_limits.h" // from TOOLS
+
 template<typename MatrixType, typename VectorType>
 class GMResSolver
 {
@@ -130,55 +132,63 @@ iteration (const MatrixType &A, const VectorType &b, const VectorType &x0, Vecto
 //	addScale(1.,b, r0);
 	double beta = norm(r0);
 	
-	Kbasis.clear();
-	Kbasis.resize(dimK+1);
-	Kbasis[0] = r0 / beta;
-	
-	// overlap matrix
-	Matrix<typename VectorType::Scalar,Dynamic,Dynamic> h(dimK+1,dimK); h.setZero();
-	
-	dimKc = 1; // current Krylov dimension
-	Matrix<typename VectorType::Scalar,Dynamic,1> y;
-	
-	// Arnoldi construction of an orthogonal Krylov space basis
-	for (size_t j=0; j<dimK; ++j)
+	if (abs(beta) < ::mynumeric_limits<double>::epsilon())
 	{
-//		cout << termcolor::red << "j=" << j << termcolor::reset << endl;
-		HxV(A,Kbasis[j], Kbasis[j+1]);
-		for (size_t i=0; i<=j; ++i)
-		{
-			h(i,j) = dot(Kbasis[i],Kbasis[j+1]);
-			Kbasis[j+1] -= h(i,j) * Kbasis[i];
-//			addScale(-h(i,j),Kbasis[i], Kbasis[j+1]);
-		}
-		h(j+1,j) = norm(Kbasis[j+1]);
-		Kbasis[j+1] /= h(j+1,j);
-		
-		dimKc = j+1;
-		
-		// solve linear system in Krylov space
-		y = h.topLeftCorner(dimKc+1,dimKc).jacobiSvd(ComputeThinU|ComputeThinV).solve(beta*Matrix<typename VectorType::Scalar,Dynamic,1>::Unit(dimKc+1,0));
-		
-		// a posteriori residual calculation
-		residual = abs(h(dimKc,dimKc-1) * abs(y(dimKc-1)));
-//		cout << termcolor::red << "residual=" << residual << termcolor::reset << endl;
-		
-//		cout << h << endl;
-//		cout << "j=" << j 
-//		     << ", dimKc=" << dimKc 
-//		     << ", h(dimKc,dimKc-1)=" << h(dimKc,dimKc-1) 
-//		     << ", abs(y(dimKc-1))=" << abs(y(dimKc-1)) 
-//		     << ", residual=" << residual << endl;
-		
-		if (residual < tol) {break;}
+		x = x0;
+		residual = beta;
 	}
-	
-	// project out of Krylov space
-	x = x0;
-	for (size_t k=0; k<dimKc; ++k)
+	else
 	{
-		x += y(k) * Kbasis[k];
-//		addScale(y(k),Kbasis[k], x);
+		Kbasis.clear();
+		Kbasis.resize(dimK+1);
+		Kbasis[0] = r0 / beta;
+		
+		// overlap matrix
+		Matrix<typename VectorType::Scalar,Dynamic,Dynamic> h(dimK+1,dimK); h.setZero();
+		
+		dimKc = 1; // current Krylov dimension
+		Matrix<typename VectorType::Scalar,Dynamic,1> y;
+		
+		// Arnoldi construction of an orthogonal Krylov space basis
+		for (size_t j=0; j<dimK; ++j)
+		{
+	//		cout << termcolor::red << "j=" << j << termcolor::reset << endl;
+			HxV(A,Kbasis[j], Kbasis[j+1]);
+			for (size_t i=0; i<=j; ++i)
+			{
+				h(i,j) = dot(Kbasis[i],Kbasis[j+1]);
+				Kbasis[j+1] -= h(i,j) * Kbasis[i];
+	//			addScale(-h(i,j),Kbasis[i], Kbasis[j+1]);
+			}
+			h(j+1,j) = norm(Kbasis[j+1]);
+			Kbasis[j+1] /= h(j+1,j);
+			
+			dimKc = j+1;
+			
+			// solve linear system in Krylov space
+			y = h.topLeftCorner(dimKc+1,dimKc).jacobiSvd(ComputeThinU|ComputeThinV).solve(beta*Matrix<typename VectorType::Scalar,Dynamic,1>::Unit(dimKc+1,0));
+			
+			// a posteriori residual calculation
+			residual = abs(h(dimKc,dimKc-1) * abs(y(dimKc-1)));
+	//		cout << termcolor::red << "residual=" << residual << termcolor::reset << endl;
+			
+	//		cout << h << endl;
+	//		cout << "j=" << j 
+	//		     << ", dimKc=" << dimKc 
+	//		     << ", h(dimKc,dimKc-1)=" << h(dimKc,dimKc-1) 
+	//		     << ", abs(y(dimKc-1))=" << abs(y(dimKc-1)) 
+	//		     << ", residual=" << residual << endl;
+			
+			if (residual < tol) {break;}
+		}
+		
+		// project out of Krylov space
+		x = x0;
+		for (size_t k=0; k<dimKc; ++k)
+		{
+			x += y(k) * Kbasis[k];
+	//		addScale(y(k),Kbasis[k], x);
+		}
 	}
 }
 

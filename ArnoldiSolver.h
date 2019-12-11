@@ -95,6 +95,7 @@ calc_dominant (const MatrixType &A, VectorType &x, complex<double> &lambda_res, 
 	
 	VectorType x0 = x;
 	GaussianRandomVector<VectorType,complex<double> >::fill(dimA,x0);
+	normalize(x0);
 	do
 	{
 		iteration(A,x0,x,lambda); ++N_iter;

@@ -57,7 +57,7 @@ public:
 	virtual string info() const;
 	double calc_memory (const Hamiltonian &H, MEMUNIT memunit=GB) const;
 	int mvms() const {return stat.N_mvm;};
-	inline double get_deltaE() const {return deltaE;};
+	inline double get_deltaE() const{return deltaE;};
 	//--------</info>--------
 	
 	//--------<force params>--------
@@ -388,6 +388,7 @@ iteration (const Hamiltonian &H, const VectorType &u)
 		a(0) = isReal(dot(w,Kbasis[0]));
 		
 		deltaE = abs(dot(w,w)-pow(a(0),2));
+//		cout << "dot(w,w)=" << dot(w,w) << ", pow(a(0),2)=" << pow(a(0),2) << endl;
 		
 		// step: 1
 		w -= a(0) * Kbasis[0];
