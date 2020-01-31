@@ -27,10 +27,10 @@ public:
 	
 private:
 	
-	size_t dimK, dimA, dimKc;
+	size_t dimK=0, dimA=0, dimKc=0;
 	double residual = std::nan("1");
 	double tol;
-	size_t N_iterations;
+	size_t N_iterations=0;
 	
 	bool USER_HAS_FORCED_DIMK = false;
 	
@@ -134,6 +134,7 @@ iteration (const MatrixType &A, const VectorType &b, const VectorType &x0, Vecto
 	
 	if (abs(beta) < ::mynumeric_limits<double>::epsilon())
 	{
+		dimKc = 1;
 		x = x0;
 		residual = beta;
 	}
