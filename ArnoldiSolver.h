@@ -5,6 +5,7 @@
 #define ARNOLDI_MAX_ITERATIONS 1e2
 #endif
 
+#include <algorithm>
 #include "RandomVector.h"
 
 template<typename MatrixType, typename VectorType>
@@ -22,6 +23,8 @@ public:
 	
 	string info() const;
 	
+	complex<double> get_lambda2() const {return lambda2;};
+	
 private:
 	
 	size_t dimA, dimK, dimKc;
@@ -30,6 +33,7 @@ private:
 	double tol;
 	
 	complex<double> lambda;
+	complex<double> lambda2;
 	
 	bool USER_HAS_FORCED_DIMK=false;
 	
@@ -54,8 +58,10 @@ info() const
 		ss << ", breakoff after max.iterations";
 	}
 	ss << ", error=" << error;
-	ss << ", λ=" << lambda;
-	ss << ", |λ|=" << abs(lambda);
+	ss << ", λ1=" << lambda;
+	ss << ", |λ1|=" << abs(lambda);
+	ss << ", λ2=" << lambda2;
+	ss << ", |λ2|=" << abs(lambda2);
 	
 	return ss.str();
 }
@@ -106,6 +112,22 @@ calc_dominant (const MatrixType &A, VectorType &x, complex<double> &lambda_res, 
 	lambda_res = lambda;
 }
 
+complex<double> find_second_largest (const VectorXcd &v)
+{
+	vector<tuple<complex<double>,int>> vals;
+	for (int i=0; i<v.rows(); ++i) vals.push_back(make_tuple(v(i),i));
+	sort(vals.begin(), vals.end(), [](tuple<complex<double>,int> a, tuple<complex<double>,int> b)
+	{
+		if (abs(get<0>(a)) == abs(get<0>(b)))
+			return abs(get<0>(a)) > abs(get<0>(b));
+		return abs(get<0>(a)) > abs(get<0>(b));
+	});
+	// get<1> if index is required
+//	cout << "largest=" << get<0>(vals[0]) << endl;
+	return get<0>(vals[1]);
+}
+
+
 template<typename MatrixType, typename VectorType>
 void ArnoldiSolver<MatrixType,VectorType>::
 iteration (const MatrixType &A, const VectorType &x0, VectorType &x, complex<double> &lambda_res)
@@ -139,6 +161,10 @@ iteration (const MatrixType &A, const VectorType &x0, VectorType &x, complex<dou
 		// calculate dominant eigenvector within the Krylov space
 		Eugen.compute(h.topLeftCorner(dimKc,dimKc));
 		Eugen.eigenvalues().cwiseAbs().maxCoeff(&max);
+		
+		lambda2 = find_second_largest(Eugen.eigenvalues());
+//		cout << "second=" << find_second_largest(Eugen.eigenvalues()) << endl;
+		
 		lambda = Eugen.eigenvalues()(max);
 		
 		error = abs(lambda_res-lambda_old);
