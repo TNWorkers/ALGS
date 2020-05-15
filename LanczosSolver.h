@@ -574,6 +574,14 @@ template<typename Hamiltonian, typename VectorType, typename Scalar>
 void LanczosSolver<Hamiltonian,VectorType,Scalar>::
 calc_next_ab (const Hamiltonian &H)
 {
+//	double t_HxV = 0.;
+//	double t_pre = 0.;
+//	double t_post = 0.;
+//	double t_tot = 0.;
+//	
+//	Stopwatch<> Watch_tot;
+//	Stopwatch<> Watch1;
+	
 	++dimK;
 	a.conservativeResize(dimK);
 	b.conservativeResize(dimK);
@@ -583,11 +591,19 @@ calc_next_ab (const Hamiltonian &H)
 	reorthogonalize(dimK-2);
 	
 	VectorType w;
+//	t_pre += Watch1.time(SECONDS);
+//	Stopwatch<> Watch2;
 	HxV(H,Kbasis[dimK-1],w); ++stat.N_mvm;
+//	t_HxV += Watch2.time(SECONDS);
+//	Stopwatch<> Watch3;
 	a(dimK-1) = isReal(dot(w,Kbasis[dimK-1]));
 	w -= a(dimK-1) * Kbasis[dimK-1] + b(dimK-1) * Kbasis[dimK-2];
 	next_b = norm(w);
 	next_K = w/next_b;
+//	t_post += Watch3.time(SECONDS);
+//	t_tot += Watch_tot.time(SECONDS);
+//	
+//	cout << "pre=" << t_pre/t_tot << ", HxV=" << t_HxV/t_tot << ", t_post=" << t_post/t_tot << endl;
 }
 //--------------</core algorithm>--------------
 

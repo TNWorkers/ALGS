@@ -28,7 +28,38 @@ struct ComplexInterpol
 		return data[0].evaluate(x) + 1.i * data[1].evaluate(x);
 	};
 	
+	double evaluateRe (double x)
+	{
+		return data[0].evaluate(x);
+	};
+	
+	double evaluateIm (double x)
+	{
+		return data[1].evaluate(x);
+	};
+	
+	double quick_evaluateRe (double x) const
+	{
+		return data[0](x);
+	};
+	
+	double quick_evaluateIm (double x) const
+	{
+		return data[1](x);
+	};
+	
+	complex<double> operator() (double x) const
+	{
+		return data[0](x) + 1.i * data[1](x);
+	}
+	
 	std::array<Interpol<GSL>,2> data; // array indices: real and imaginary part
+	
+	void set_splines()
+	{
+		data[0].set_splines();
+		data[1].set_splines();
+	}
 	
 	void kill_splines()
 	{

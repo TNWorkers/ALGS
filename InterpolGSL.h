@@ -35,8 +35,8 @@ public:
 	double deriv_y  (double x, double y);
 	
 	// without checks:
-	double operator() (double x);
-	double operator() (double x, double y);
+	double operator() (double x) const;
+	double operator() (double x, double y) const;
 	
 	template<typename MatrixType> void operator= (const MatrixType &M);
 	void operator= (const Eigen::VectorXd &V);
@@ -188,7 +188,7 @@ evaluate (double x)
 }
 
 double Interpol<GSL>::
-operator() (double x)
+operator() (double x) const
 {
 	return gsl_spline_eval(spline1d, x, xbooster);
 }
@@ -244,7 +244,7 @@ evaluate (double x, double y)
 }
 
 double Interpol<GSL>::
-operator() (double x, double y)
+operator() (double x, double y) const
 {
 	return gsl_spline2d_eval(spline2d, x, y, xbooster, ybooster);
 }
