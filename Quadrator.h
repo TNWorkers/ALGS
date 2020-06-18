@@ -90,6 +90,8 @@ public:
 	double diff_weight (int k, double xmin, double xmax, int order);
 	int diff_feval (const Eigen::VectorXi indexSet);
 	
+	void calculate_weights (int xpoints);
+	
 private:
 	
 	double b=1.;
@@ -97,8 +99,6 @@ private:
 	vector<Eigen::VectorXd> weights;
 	vector<Eigen::VectorXd> points;
 	map<int,int> IndexDictionary; // dictionary of indices: xpoints -> position in vectorsweights & points
-	
-	void calculate_weights (int xpoints);
 };
 
 template<QUAD_RULE qrule>

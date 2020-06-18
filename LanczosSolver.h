@@ -366,12 +366,13 @@ iteration (const Hamiltonian &H, const VectorType &u)
 		set_eigval_index(); // reset eigval index
 	};
 	
-	auto convergedSubSpaceExit = [this] (int i)
+	auto convergedExit = [this] (int i, const VectorType& next_K_input)
 	{
 		convSubspace = i+1;
 		dimK = convSubspace;
 		next_b = b(dimK);
-		next_K = Kbasis[dimK];
+//		next_K = Kbasis[dimK]; // only for LANCZOS::EFFICIENCY::TIME
+		next_K = next_K_input;
 		a.conservativeResize(dimK);
 		b.conservativeResize(dimK);
 		Kbasis.resize(dimK);
@@ -438,7 +439,7 @@ iteration (const Hamiltonian &H, const VectorType &u)
 			
 			if (err_state < tol_state and err_eigval < tol_eigval)
 			{
-				convergedSubSpaceExit(i);
+				convergedExit(i,Kbasis[i+1]);
 				break;
 			}
 		}
@@ -503,6 +504,12 @@ iteration (const Hamiltonian &H, const VectorType &u)
 			err_state  = abs(b(i+1)) * abs(KrylovSolver.eigenvectors().col(eigval_index)(i)); 
 			err_eigval = abs(eigval-KrylovSolver.eigenvalues()(eigval_index));
 			eigval = KrylovSolver.eigenvalues()(eigval_index);
+			
+			if (err_state < tol_state and err_eigval < tol_eigval)
+			{
+				convergedExit(i,u1);
+				break;
+			}
 		}
 		// step: dimK-1
 		// if no inv. subspace and no early convergence -> continue
