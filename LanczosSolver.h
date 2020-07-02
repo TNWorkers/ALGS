@@ -55,7 +55,7 @@ public:
 	
 	//--------<info>--------
 	virtual string info() const;
-	double calc_memory (const Hamiltonian &H, MEMUNIT memunit=GB) const;
+	double calc_memory (const Hamiltonian &H, const VectorType &V, MEMUNIT memunit=GB) const;
 	int mvms() const {return stat.N_mvm;};
 	inline double get_deltaE() const{return deltaE;};
 	//--------</info>--------
@@ -235,7 +235,7 @@ setup_H (const Hamiltonian &H, const VectorType &V)
 		}
 	}
 	
-	stat.last_memory = calc_memory(H);
+	stat.last_memory = calc_memory(H,V);
 }
 //--------------</construct>--------------
 
@@ -526,6 +526,11 @@ void LanczosSolver<Hamiltonian,VectorType,Scalar>::
 Krylov_diagonalize()
 {
 	KrylovSolver.compute(Htridiag());
+//	cout << "e0=" << KrylovSolver.eigenvalues()(0) << endl;
+//	if (KrylovSolver.eigenvalues().rows()>1)
+//	{
+//		cout << "e1=" << KrylovSolver.eigenvalues()(1) << endl;
+//	}
 }
 
 template<typename Hamiltonian, typename VectorType, typename Scalar>
@@ -679,13 +684,17 @@ info() const
 
 template<typename Hamiltonian, typename VectorType, typename Scalar>
 double LanczosSolver<Hamiltonian,VectorType,Scalar>::
-calc_memory (const Hamiltonian &H, MEMUNIT memunit) const
+calc_memory (const Hamiltonian &H, const VectorType &V, MEMUNIT memunit) const
 {
+	size_t try_dimH = dim(H);
+	size_t try_dimV = dim(V);
+	size_t dimH = max(try_dimH, try_dimV);
+	
 	int N_vec = 1;
 	
 	if (USER_HAS_FORCED_EFFICIENCY == false)
 	{
-		if (dim(H) > LANCZOS_MEMORY_THRESHOLD)
+		if (dimH > LANCZOS_MEMORY_THRESHOLD)
 		{
 			N_vec += 3;
 		}
@@ -705,7 +714,7 @@ calc_memory (const Hamiltonian &H, MEMUNIT memunit) const
 			N_vec += 3;
 		}
 	}
-	return N_vec * (::calc_memory<Scalar>(dim(H),memunit));
+	return N_vec * (::calc_memory<Scalar>(dimH,memunit));
 }
 //--------------</info>--------------
 
