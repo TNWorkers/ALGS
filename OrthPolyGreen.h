@@ -35,6 +35,7 @@ public:
 	double ImAAintegral (double (*f)(double), int Msave, double Eoffset=0., bool REVERSE=false, KERNEL_CHOICE KERNEL=JACKSON);
 	double ImAAarea (KERNEL_CHOICE KERNEL=JACKSON);
 	Scalar evaluate_ImAA (double E, int Msave=-1, double Eoffset=0., bool REVERSE=false, KERNEL_CHOICE KERNEL=JACKSON);
+	Scalar evaluate_ImAA_betaint (double beta, int Msave=-1, double Eoffset=0., bool REVERSE=false, KERNEL_CHOICE KERNEL=JACKSON);
 	double evaluate_ImAA_scaled (double x, int Msave_input, bool REVERSE=false, KERNEL_CHOICE KERNEL=JACKSON);
 //	Scalar evaluate_ImAA_deriv (double E, int Msave_input, double Eoffset, bool REVERSE, KERNEL_CHOICE KERNEL=JACKSON);
 	Scalar evaluate_ImAB (int i, double E, int Msave_input=-1, double Eoffset=0., bool REVERSE=false, KERNEL_CHOICE KERNEL=JACKSON);
@@ -574,9 +575,7 @@ evaluate_ImAA (double E, int Msave_input, double Eoffset, bool REVERSE, KERNEL_C
 {
 	if (E+Eoffset<=this->Emin or E+Eoffset>=this->Emax)
 	{
-		Scalar res = ImAAmoments[0];
-		res = 0;
-		return res;
+		return 0;
 	}
 	else
 	{
@@ -594,6 +593,23 @@ evaluate_ImAA (double E, int Msave_input, double Eoffset, bool REVERSE, KERNEL_C
 		
 		return res*OrthPoly<P>::w(E_scaled)/abs(a);
 	}
+}
+
+template<typename Hamiltonian, typename VectorType, typename Scalar, ORTHPOLY P>
+Scalar OrthPolyGreen<Hamiltonian,VectorType,Scalar,P>::
+evaluate_ImAA_betaint (double beta, int Msave_input, double Eoffset, bool REVERSE, KERNEL_CHOICE KERNEL)
+{
+	int Msave = (Msave_input==-1)? ImAAmoments.size() : Msave_input;
+	double a=this->a; double b=this->b;
+	
+	Scalar res = 0;
+	for (int n=0; n<Msave; ++n)
+	{
+		double phase = (REVERSE==true)? pow(-1.,n) : 1.;
+		res += OrthPoly<P>::orthfac(n) * ImAAmoments[n] * this->kernel(n,Msave,KERNEL) * phase * pow(-1.,n) * cyl_bessel_i(n,beta/a);
+	}
+	
+	return res*exp(beta*(b-Eoffset)/a)/abs(a);
 }
 
 //template<typename Hamiltonian, typename VectorType, typename Scalar, ORTHPOLY P>
