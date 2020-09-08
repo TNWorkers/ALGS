@@ -390,13 +390,20 @@ iteration (const Hamiltonian &H, const VectorType &u)
 		
 		deltaE = abs(dot(w,w)-pow(a(0),2));
 //		cout << "dot(w,w)=" << dot(w,w) << ", pow(a(0),2)=" << pow(a(0),2) << endl;
-		
+
 		// step: 1
 		w -= a(0) * Kbasis[0];
 		if (dimK == 1)
 		{
 			next_b = norm(w);
-			next_K = w/next_b;
+			if (std::abs(next_b) < eps_invSubspace)
+			{
+				next_K = w;
+			}
+			else
+			{
+				next_K = w/next_b;
+			}
 		}
 		else if (dimK>1)
 		{
@@ -411,7 +418,7 @@ iteration (const Hamiltonian &H, const VectorType &u)
 				reorthogonalize(0);
 			}
 		}
-		
+
 		// steps: 2 to dimK-2
 		for (int i=1; i<dimK-1; ++i)
 		{
@@ -424,6 +431,11 @@ iteration (const Hamiltonian &H, const VectorType &u)
 			a(i) = isReal(dot(w,Kbasis[i]));
 			w -= a(i) * Kbasis[i] + b(i) * Kbasis[i-1];
 			b(i+1) = norm(w);
+			if (std::abs(b(i+1)) < eps_invSubspace)
+			{
+				invariantSubSpaceExit(i+1);
+				break;
+			}
 			Kbasis[i+1] = w/b(i+1);
 			reorthogonalize(i);
 			

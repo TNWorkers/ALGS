@@ -16,11 +16,11 @@
 #include <random>
 #include <thread>
 
-template<typename Scalar> Scalar threadSafeRandUniform (double min, double max, bool SEED=false) {};
-template<typename Scalar> Scalar threadSafeRandNormal (double mean, double sigma) {};
+template<typename Scalar, typename RealScalar> Scalar threadSafeRandUniform (RealScalar min, RealScalar max, bool SEED=false) {};
+template<typename Scalar, typename RealScalar> Scalar threadSafeRandNormal (RealScalar mean, RealScalar sigma) {};
 
 template<>
-double threadSafeRandUniform<double> (double min, double max, bool SEED)
+double threadSafeRandUniform<double,double> (double min, double max, bool SEED)
 {
 	static thread_local mt19937 generatorUniformReal(random_device{}());
 	if (SEED) generatorUniformReal.seed(std::time(0));
@@ -29,16 +29,25 @@ double threadSafeRandUniform<double> (double min, double max, bool SEED)
 }
 
 template<>
-complex<double> threadSafeRandUniform<complex<double> > (double min, double max, bool SEED)
+complex<double> threadSafeRandUniform<complex<double>, double> (double min, double max, bool FIXED_SEED)
 {
 	static thread_local mt19937 generatorUniformComplex(random_device{}());
-	if (SEED) generatorUniformComplex.seed(std::time(0));
+	if (FIXED_SEED) generatorUniformComplex.seed(std::time(0));
 	uniform_real_distribution<double> distribution(min, max);
 	return complex<double>(distribution(generatorUniformComplex), distribution(generatorUniformComplex));
 }
 
 template<>
-double threadSafeRandNormal<double> (double mean, double sigma)
+int threadSafeRandUniform<int,int> (int min, int max, bool SEED)
+{
+	static thread_local mt19937 generatorUniformInt(random_device{}());
+	if (SEED) generatorUniformInt.seed(std::time(0));
+	uniform_int_distribution<unsigned> distribution(min, max);
+	return distribution(generatorUniformInt);
+}
+
+template<>
+double threadSafeRandNormal<double,double> (double mean, double sigma)
 {
 	static thread_local mt19937 generatorNormalReal(random_device{}());
 	normal_distribution<double> distribution(mean, sigma);
@@ -46,7 +55,7 @@ double threadSafeRandNormal<double> (double mean, double sigma)
 }
 
 template<>
-complex<double> threadSafeRandNormal<complex<double> > (double mean, double sigma)
+complex<double> threadSafeRandNormal<complex<double>,double> (double mean, double sigma)
 {
 	static thread_local mt19937 generatorNormalComplex(random_device{}());
 	normal_distribution<double> distribution(mean, sigma);
@@ -65,7 +74,7 @@ struct GaussianRandomVector
 	static void fill (size_t N, VectorType &Vout)
 	{
 		Vout.resize(N);
-		for (size_t i=0; i<N; ++i) {Vout(i) = threadSafeRandUniform<Scalar>(-1.,1.);}
+		for (size_t i=0; i<N; ++i) {Vout(i) = threadSafeRandUniform<Scalar,double>(-1.,1.);}
 		normalize(Vout);
 	}
 };
@@ -87,7 +96,7 @@ Eigen::MatrixXd randOrtho (size_t N)
 	for (size_t i=0; i<N; ++i)
 	for (size_t j=0; j<N; ++j)
 	{
-		M(i,j) = threadSafeRandUniform<double>(0.,1.);
+		M(i,j) = threadSafeRandUniform<double,double>(0.,1.);
 	}
 	Eigen::HouseholderQR<Eigen::MatrixXd> Quirinus(M);
 	Eigen::MatrixXd Qmatrix = Eigen::MatrixXd::Identity(N,N);
