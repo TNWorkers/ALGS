@@ -43,6 +43,7 @@ public:
 	void operator= (const vector<double>  &V);
 	
 	double integrate();
+	double integrate (double xmax);
 	void setConstant (double c);
 	
 private:
@@ -291,6 +292,13 @@ integrate()
 {
 	if (SPLINES_ARE_SET == false) {set_splines();}
 	return gsl_spline_eval_integ(spline1d, rmin[0], rmax[0], xbooster);
+}
+
+double Interpol<GSL>::
+integrate (double xmax)
+{
+	if (SPLINES_ARE_SET == false) {set_splines();}
+	return gsl_spline_eval_integ(spline1d, rmin[0], xmax, xbooster);
 }
 
 inline void Interpol<GSL>::
