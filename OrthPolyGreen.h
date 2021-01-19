@@ -159,7 +159,7 @@ calc_ImAA (Hamiltonian &H, const VectorType &AxV, int M_input, bool USE_IDENTITI
 		if (VERBOSE) lout << "****** -1/π Im≪A†;A≫(ω) iteration: " << 1+n << " / " << range << " ******" << endl;
 		
 		H.scale(OrthPoly<P>::C(n+1)/OrthPoly<P>::C(n)); // H = C_{n+1}·(α·H+β)
-		polyIter(H,V1,OrthPoly<P>::B(n+1),V0,Vtmp); ++this->N_mvm; // Vtmp = C_{n+1}(α·H+β)·V1 - B_{n+1}·V0
+		polyIter(H,V1,OrthPoly<P>::B(n+1),V0,Vtmp,VERBOSE); ++this->N_mvm; // Vtmp = C_{n+1}(α·H+β)·V1 - B_{n+1}·V0
 		V0 = V1; // V0 = V_{n-1}
 		V1 = Vtmp; // V1 = V_{n}
 		
@@ -251,7 +251,7 @@ calc_ImAB (Hamiltonian &H, const vector<VectorType> &AxV, const VectorType &BxV,
 		if (VERBOSE) lout << "****** -1/π Im≪A;B≫(ω) iteration: " << 1+n << " / " << M-1 << " ******" << endl;
 		
 		H.scale(OrthPoly<P>::C(n+1)/OrthPoly<P>::C(n)); // H = A_{n+1}·(α·H+β)
-		polyIter(H,V1,OrthPoly<P>::B(n+1),V0,Vtmp); ++this->N_mvm; // Vtmp = A_{n+1}(α·H+β)·V1 - B_{n+1}·V0
+		polyIter(H,V1,OrthPoly<P>::B(n+1),V0,Vtmp,VERBOSE); ++this->N_mvm; // Vtmp = A_{n+1}(α·H+β)·V1 - B_{n+1}·V0
 		V0 = V1; // V0 = V_{n-1}
 		V1 = Vtmp; // V1 = V_{n}
 		

@@ -40,8 +40,8 @@ public:
 	
 	RadialSchroedingerSolver(){};
 	
-	RadialSchroedingerSolver (double rmin_input, double rmax_input, int Nmom_input)
-	:rmin(rmin_input), rmax(rmax_input), Nmom(Nmom_input)
+	RadialSchroedingerSolver (double rmin_input, double rmax_input, int Nmom_input, double Ecutoff_input=0.)
+	:rmin(rmin_input), rmax(rmax_input), Nmom(Nmom_input), Ecutoff(Ecutoff_input)
 	{
 		a = 0.5*(rmax-rmin);
 		b = 0.5*(rmax+rmin);
@@ -140,7 +140,7 @@ public:
 		
 		for (int i=0; i<General.eigenvalues().rows(); ++i)
 		{
-			if (General.eigenvalues()(i).real() < 0. and not std::isinf(abs(General.eigenvalues()(i).real())))
+			if (General.eigenvalues()(i).real() < Ecutoff and not std::isinf(abs(General.eigenvalues()(i).real())))
 			{
 				Eigenstate<Eigen::VectorXcd> bound_solution;
 				bound_solution.energy = Escale*General.eigenvalues()(i).real()/pow(a,2);
@@ -159,6 +159,7 @@ private:
 	Eigen::MatrixXd D, E;
 	
 	double rmin, rmax, a, b;
+	double Ecutoff;
 	int Nmom;
 };
 
