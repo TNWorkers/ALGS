@@ -1,8 +1,13 @@
 #ifndef CUTHILLMCKEECOMPRESSOR
 #define CUTHILLMCKEECOMPRESSOR
 
+// suppresses compiler warnings:
+#define BOOST_BIND_GLOBAL_PLACEHOLDERS
+#define BOOST_ALLOW_DEPRECATED_HEADERS
+
 #include <vector>
 #include <iostream>
+
 #include <boost/config.hpp>
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/cuthill_mckee_ordering.hpp>
@@ -57,7 +62,7 @@ ArrayXXd compress_CuthillMcKee (const ArrayXXd &A, bool PRINT=false)
 	{
 		for (int t=0; t<transform.size(); ++t)
 		{
-			lout << t << "->" << transform[t] << endl;
+			lout << t << "→" << transform[t] << endl;
 		}
 	}
 	
@@ -71,12 +76,12 @@ ArrayXXd compress_CuthillMcKee (const ArrayXXd &A, bool PRINT=false)
 	{
 		if (abs(A(i,j)) > 0.)
 		{
-			res(transform[i],transform[j]) = 1.;
-			res(transform[j],transform[i]) = 1.;
+			res(transform[i],transform[j]) = A(i,j);
+			res(transform[j],transform[i]) = A(j,i);
 		}
 	}
 	
-	lout << "Reverse Cuthill-McKee ordering starting at: " << s << ", bandwidth reduction: " << b << "→" << b_new << endl;
+	if (PRINT) lout << "Reverse Cuthill-McKee ordering starting at: " << s << ", bandwidth reduction: " << b << "→" << b_new << endl;
 	
 	return res;
 }
