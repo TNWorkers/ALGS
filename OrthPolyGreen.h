@@ -35,7 +35,7 @@ public:
 	double ImAAintegral (double (*f)(double), int Msave, double Eoffset=0., bool REVERSE=false, KERNEL_CHOICE KERNEL=JACKSON);
 	double ImAAarea (KERNEL_CHOICE KERNEL=JACKSON);
 	Scalar evaluate_ImAA (double E, int Msave=-1, double Eoffset=0., bool REVERSE=false, KERNEL_CHOICE KERNEL=JACKSON);
-	Scalar evaluate_ImAA_betaint (double betaval, int Msave=-1, double Eoffset=0., bool REVERSE=false, KERNEL_CHOICE KERNEL=JACKSON);
+	Scalar evaluate_ImAA_betaint (double betaval, int Msave=-1, double Eoffset=0., bool REVERSE=false, KERNEL_CHOICE KERNEL=JACKSON) const;
 	double evaluate_ImAA_scaled (double x, int Msave_input, bool REVERSE=false, KERNEL_CHOICE KERNEL=JACKSON);
 //	Scalar evaluate_ImAA_deriv (double E, int Msave_input, double Eoffset, bool REVERSE, KERNEL_CHOICE KERNEL=JACKSON);
 	Scalar evaluate_ImAB (int i, double E, int Msave_input=-1, double Eoffset=0., bool REVERSE=false, KERNEL_CHOICE KERNEL=JACKSON);
@@ -51,6 +51,7 @@ public:
 //	void save_ImAAderiv (int Msave, string datfile, double Eoffset, bool REVERSE, KERNEL_CHOICE KERNEL=JACKSON);
 	void save_ImAAmoments (string momfile, int Msave_input=-1);
 	void inject_ImAAmoments (const vector<Scalar> ImAAmoments_input);
+	void scale_ImAAmoments (double x);
 	MatrixXd get_ImAA (int Msave, double Eoffset=0., bool REVERSE=false, KERNEL_CHOICE KERNEL=JACKSON);
 	vector<Scalar> get_ImAAmoments() {return ImAAmoments;}
 	vector<vector<Scalar> > get_ImABmoments() {return ImABmoments;}
@@ -152,11 +153,19 @@ calc_ImAA (Hamiltonian &H, const VectorType &AxV, int M_input, bool USE_IDENTITI
 	
 	H.scale(OrthPoly<P>::C(1)); // H = C_n·(α·H+β)
 	
+	stringstream saveStringStream;
+	for (auto info=savepoints.begin(); info!=savepoints.end(); ++info)
+	{
+		saveStringStream << get<0>(*info) << ",";
+	}
+	string saveString = saveStringStream.str();
+	saveString.pop_back();
+	
 	VectorType Vtmp;
 	int range = (USE_IDENTITIES==true)? M/2 : M-1;
 	for (int n=1; n<range; ++n)
 	{
-		if (VERBOSE) lout << "****** -1/π Im≪A†;A≫(ω) iteration: " << 1+n << " / " << range << " ******" << endl;
+		if (VERBOSE) lout << "****** -1/π Im≪A†;A≫(ω) iteration: " << 1+n << " / " << range << ", savepoints=" << saveString << " ******" << endl;
 		
 		H.scale(OrthPoly<P>::C(n+1)/OrthPoly<P>::C(n)); // H = C_{n+1}·(α·H+β)
 		polyIter(H,V1,OrthPoly<P>::B(n+1),V0,Vtmp,VERBOSE); ++this->N_mvm; // Vtmp = C_{n+1}(α·H+β)·V1 - B_{n+1}·V0
@@ -597,7 +606,7 @@ evaluate_ImAA (double E, int Msave_input, double Eoffset, bool REVERSE, KERNEL_C
 
 template<typename Hamiltonian, typename VectorType, typename Scalar, ORTHPOLY P>
 Scalar OrthPolyGreen<Hamiltonian,VectorType,Scalar,P>::
-evaluate_ImAA_betaint (double betaval, int Msave_input, double Eoffset, bool REVERSE, KERNEL_CHOICE KERNEL)
+evaluate_ImAA_betaint (double betaval, int Msave_input, double Eoffset, bool REVERSE, KERNEL_CHOICE KERNEL) const
 {
 	int Msave = (Msave_input==-1)? ImAAmoments.size() : Msave_input;
 	double a=this->a; double b=this->b;
@@ -605,11 +614,11 @@ evaluate_ImAA_betaint (double betaval, int Msave_input, double Eoffset, bool REV
 	Scalar res = 0;
 	for (int n=0; n<Msave; ++n)
 	{
-		if (abs(cyl_bessel_i(n,betaval*a)) < std::numeric_limits<double>::epsilon()) break;
+		if (abs(boost::math::cyl_bessel_i(n,betaval*a)) < std::numeric_limits<double>::epsilon()) break;
 		double phase = (REVERSE==true)? pow(-1.,n) : 1.;
 		// * this->kernel(n,Msave,KERNEL)
-		res += OrthPoly<P>::orthfac(n) * ImAAmoments[n] * phase * pow(-1.,n) * cyl_bessel_i(n,betaval*a);
-//		cout << "n=" << n << ", moment=" << ImAAmoments[n] << ", damped=" << this->kernel(n,Msave,KERNEL) << ", bessel=" << cyl_bessel_i(n,betaval*a) << endl;
+		res += OrthPoly<P>::orthfac(n) * ImAAmoments[n] * phase * pow(-1.,n) * boost::math::cyl_bessel_i(n,betaval*a);
+//		cout << "n=" << n << ", moment=" << ImAAmoments[n] << ", damped=" << this->kernel(n,Msave,KERNEL) << ", bessel=" << boost::math::cyl_bessel_i(n,betaval*a) << endl;
 	}
 	
 //	cout << "res=" << res << ", mult=" << exp(-betaval*(b-Eoffset))/abs(a) << endl;
@@ -770,7 +779,10 @@ ImAAintegral (double (*f)(double), int Msave, double Eoffset, bool REVERSE, KERN
 	vector<Scalar> ImAAgamma = this->fct(ImAAmoments,Msave,REVERSE,KERNEL);
 	IntervalIterator Eit(Emin-Eoffset,Emax-Eoffset,Msave,ChebyshevAbscissa);
 	
-	return (ImAAgamma.cwiseProduct(Eit.get_abscissa().unaryExpr(std::ptr_fun(f)))).sum();
+	//return (ImAAgamma.cwiseProduct(Eit.get_abscissa().unaryExpr(boost::ptr_fun(f)))).sum();
+	// ptr_fun is deprecated, must rewrite!
+	lout << termcolor::red << "ptr_fun is deprecated, must rewrite the code in OrthPolyGreen!" << termcolor::reset << endl;
+	return 0.;
 }
 
 // \int A(x)*A(y-x)dx
@@ -825,6 +837,16 @@ inject_ImAAmoments (const vector<Scalar> ImAAmoments_input)
 	ImAAmoments = ImAAmoments_input;
 	GOT_MOMENTS = true;
 	M = ImAAmoments.size();
+}
+
+template<typename Hamiltonian, typename VectorType, typename Scalar, ORTHPOLY P>
+void OrthPolyGreen<Hamiltonian,VectorType,Scalar,P>::
+scale_ImAAmoments (double x)
+{
+	for (int i=0; i<ImAAmoments.size(); ++i)
+	{
+		ImAAmoments[i] *= x;
+	}
 }
 
 template<typename Hamiltonian, typename VectorType, typename Scalar, ORTHPOLY P>

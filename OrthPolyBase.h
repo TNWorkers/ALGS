@@ -112,7 +112,10 @@ OrthPolyBase (const Hamiltonian &H, double padding_input)
 //				lout << "Emin, thread: " << omp_get_thread_num() << endl;
 				#endif
 			}
-			Emin = Lutz.Emin(H);
+			//Emin = Lutz.Emin(H);
+			Eigenstate<VectorType> g;
+			Lutz.ground(H,g);
+			Emin = g.energy;
 //			lout << Lutz.info() << endl;
 		}
 		#ifndef ORTHPOLYBASE_DONT_USE_OPENMP
@@ -125,14 +128,23 @@ OrthPolyBase (const Hamiltonian &H, double padding_input)
 //				lout << "Emax, thread: " << omp_get_thread_num() << endl;
 				#endif
 			}
-			Emax = Lucy.Emax(H);
+			//Emax = Lucy.Emax(H);
+			Eigenstate<VectorType> r;
+			Lutz.roof(H,r);
+			Emax = r.energy;
 //			lout << Lucy.info() << endl;
 		}
 	}
 	else
 	{
-		Emin = Lutz.Emin(H);
-		Emax = Lucy.Emax(H);
+//		Emin = Lutz.Emin(H);
+//		Emax = Lucy.Emax(H);
+		Eigenstate<VectorType> g;
+		Lutz.ground(H,g);
+		Emin = g.energy;
+		Eigenstate<VectorType> r;
+		Lutz.ground(H,r);
+		Emax = r.energy;
 	}
 	
 	set_scalings(Emin,Emax,padding_input);
