@@ -79,13 +79,14 @@ VectorXd linearPrediction (const VectorXd &x, int N_new, double delta=0.)
 		// deal with divergent eigenvalues:
 		if (abs(lambda(i))>1)
 		{
+			lout << "i=" << i << "\tlambda(i)=" << lambda(i) << ", abs=" << abs(lambda(i)) << endl;
 //			lambda(i) = 0;
-//			lambda(i) = lambda(i)/abs(lambda(i));
-			lambda(i) = 1./conj(lambda(i));
+			lambda(i) = lambda(i)/abs(lambda(i));
+//			lambda(i) = 1./conj(lambda(i));
 			++N_div;
 		}
 	}
-	cout << "divergent eigenvalues: " << N_div << endl;
+	cout << "#divergent eigenvalues: " << N_div << endl;
 	VectorXcd xl = Eugen.eigenvectors().row(0);
 	VectorXcd xr = Eugen.eigenvectors().inverse() * x.head(L).reverse();
 	

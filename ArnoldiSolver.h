@@ -15,15 +15,22 @@ public:
 	
 	ArnoldiSolver(){};
 	
-	ArnoldiSolver (const MatrixType &A, VectorType &x, complex<double> &lambda_res, double tol_input=1e-14);
+	ArnoldiSolver (int nmax, double tol_input=1e-14)
+	:tol(tol_input)
+	{
+		errors.resize(nmax);
+		lambda.resize(nmax);
+	}
 	
-	void calc_dominant (const MatrixType &A, VectorType &x, complex<double> &lambda_res, double tol_input=1e-14);
+	ArnoldiSolver (const MatrixType &A, VectorType &x, int nmax, double tol_input=1e-14);
+	
+	void calc_dominant (const MatrixType &A, VectorType &x);
 	
 	void set_dimK (size_t dimK_input);
 	
 	string info() const;
 	
-	complex<double> get_lambda2() const {return lambda2;};
+	complex<double> get_lambda (int n) const {return lambda[n];};
 	
 private:
 	
@@ -32,14 +39,14 @@ private:
 	size_t N_iter;
 	double tol;
 	
-	complex<double> lambda;
-	complex<double> lambda2;
+	vector<double> errors;
+	vector<complex<double> > lambda;
 	
 	bool USER_HAS_FORCED_DIMK=false;
 	
 	vector<VectorType> Kbasis;
 	
-	void iteration (const MatrixType &A, const VectorType &x0, VectorType &x, complex<double> &lambda_res);
+	void iteration (const MatrixType &A, const VectorType &x0, VectorType &x);
 };
 
 template<typename MatrixType, typename VectorType>
@@ -57,20 +64,29 @@ info() const
 	{
 		ss << ", breakoff after max.iterations";
 	}
-	ss << ", error=" << error;
-	ss << ", λ1=" << lambda;
-	ss << ", |λ1|=" << abs(lambda);
-	ss << ", λ2=" << lambda2;
-	ss << ", |λ2|=" << abs(lambda2);
+	ss << ", errors=";
+	for (int n=0; n<errors.size(); ++n)
+	{
+		ss << errors[n];
+		if (n!=errors.size()-1) ss << ", ";
+	}
+	ss << endl;
+	for (int n=0; n<lambda.size(); ++n)
+	{
+		ss << "λ" << n << "=" << lambda[n] << ", |λ" << n << "|=" << abs(lambda[n]) << endl;
+	}
 	
 	return ss.str();
 }
 
 template<typename MatrixType, typename VectorType>
 ArnoldiSolver<MatrixType,VectorType>::
-ArnoldiSolver (const MatrixType &A, VectorType &x, complex<double> &lambda_res, double tol_input)
+ArnoldiSolver (const MatrixType &A, VectorType &x, int nmax, double tol_input)
+:tol(tol_input)
 {
-	calc_dominant(A,x,lambda_res,tol_input);
+	lambda.resize(nmax);
+	errors.resize(nmax);
+	calc_dominant(A,x);
 }
 
 template<typename MatrixType, typename VectorType>
@@ -83,9 +99,8 @@ set_dimK (size_t dimK_input)
 
 template<typename MatrixType, typename VectorType>
 void ArnoldiSolver<MatrixType,VectorType>::
-calc_dominant (const MatrixType &A, VectorType &x, complex<double> &lambda_res, double tol_input)
+calc_dominant (const MatrixType &A, VectorType &x)
 {
-	tol = tol_input;
 	size_t try_dimA = dim(A);
 	size_t try_dimx = dim(x);
 	assert(try_dimA != 0 or try_dimx != 0);
@@ -104,33 +119,32 @@ calc_dominant (const MatrixType &A, VectorType &x, complex<double> &lambda_res, 
 	normalize(x0);
 	do
 	{
-		iteration(A,x0,x,lambda); ++N_iter;
+		iteration(A,x0,x); ++N_iter;
 		x0 = x;
 	}
 	while (error>tol and N_iter<ARNOLDI_MAX_ITERATIONS);
-	
-	lambda_res = lambda;
 }
 
-complex<double> find_second_largest (const VectorXcd &v)
+complex<double> find_nth_largest (int n, const VectorXcd &v)
 {
 	vector<tuple<complex<double>,int>> vals;
 	for (int i=0; i<v.rows(); ++i) vals.push_back(make_tuple(v(i),i));
-	sort(vals.begin(), vals.end(), [](tuple<complex<double>,int> a, tuple<complex<double>,int> b)
+	
+	sort(vals.begin(), vals.end(), [] (tuple<complex<double>,int> a, tuple<complex<double>,int> b)
 	{
-		if (abs(get<0>(a)) == abs(get<0>(b)))
-			return abs(get<0>(a)) > abs(get<0>(b));
+		//if (abs(get<0>(a)) == abs(get<0>(b)))
+		//{
+		//	return abs(get<0>(a)) > abs(get<0>(b));
+		//}
 		return abs(get<0>(a)) > abs(get<0>(b));
 	});
-	// get<1> if index is required
-//	cout << "largest=" << get<0>(vals[0]) << endl;
-	return get<0>(vals[1]);
+	
+	return get<0>(vals[n]);
 }
-
 
 template<typename MatrixType, typename VectorType>
 void ArnoldiSolver<MatrixType,VectorType>::
-iteration (const MatrixType &A, const VectorType &x0, VectorType &x, complex<double> &lambda_res)
+iteration (const MatrixType &A, const VectorType &x0, VectorType &x)
 {
 	Kbasis.clear();
 	Kbasis.resize(dimK+1);
@@ -142,32 +156,40 @@ iteration (const MatrixType &A, const VectorType &x0, VectorType &x, complex<dou
 	size_t max;
 	
 	dimKc = 1; // current Krylov dimension
-	complex<double> lambda_old = complex<double>(1e3,1e3);
-	// Arnoldi construction of an orthogonal Krylov space basis
-	for (size_t j=0; j<dimK; ++j)
+	vector<complex<double> > lambda_old(lambda.size());
+	for (int n=0; n<lambda.size(); ++n)
 	{
-		HxV(A,Kbasis[j], Kbasis[j+1]);
-		for (size_t i=0; i<=j; ++i)
+		lambda_old[n] = complex<double>(1e3,1e3);
+	}
+	// Arnoldi construction of an orthogonal Krylov space basis
+	for (size_t k=1; k<=dimK; ++k)
+	{
+		HxV(A,Kbasis[k-1], Kbasis[k]);
+		for (size_t j=0; j<k; ++j)
 		{
-			h(i,j) = dot(Kbasis[i],Kbasis[j+1]);
-//			Kbasis[j+1] -= h(i,j) * Kbasis[i];
-			addScale(-h(i,j),Kbasis[i], Kbasis[j+1]);
+			h(j,k-1) = dot(Kbasis[j],Kbasis[k]);
+//			Kbasis[k] -= h(j,k-1) * Kbasis[j];
+			addScale(-h(j,k-1),Kbasis[j], Kbasis[k]);
 		}
-		h(j+1,j) = norm(Kbasis[j+1]);
-		Kbasis[j+1] /= h(j+1,j);
+		h(k,k-1) = norm(Kbasis[k]);
+		Kbasis[k] /= h(k,k-1);
 		
-		dimKc = j+1;
+		dimKc = k;
 		
-		// calculate dominant eigenvector within the Krylov space
+		// calculate dominant eigenvectors within the Krylov space
 		Eugen.compute(h.topLeftCorner(dimKc,dimKc));
 		Eugen.eigenvalues().cwiseAbs().maxCoeff(&max);
 		
-		lambda2 = find_second_largest(Eugen.eigenvalues());
-//		cout << "second=" << find_second_largest(Eugen.eigenvalues()) << endl;
+		//lambda[0] = Eugen.eigenvalues()(max);
 		
-		lambda = Eugen.eigenvalues()(max);
+		for (int n=0; n<lambda.size(); ++n)
+		{
+			lambda[n] = find_nth_largest(n,Eugen.eigenvalues());
+			errors[n] = abs(lambda[n]-lambda_old[n]);
+			//lout << "n=" << n << ", error=" << errors[n] << endl;
+		}
+		error = *max_element(errors.begin(), errors.end());
 		
-		error = abs(lambda_res-lambda_old);
 		lambda_old = lambda;
 		
 		if (error < tol) {break;}
