@@ -16,7 +16,16 @@ struct ComplexInterpol
 	{
 		data[0].insert(i, val.real());
 		data[1].insert(i, val.imag());
-	}
+	};
+	
+	void operator= (const VectorXcd &V)
+	{
+		for (int i=0; i<V.rows(); ++i)
+		{
+			data[0].insert(i, V(i).real());
+			data[1].insert(i, V(i).imag());
+		}
+	};
 	
 	complex<double> integrate()
 	{
