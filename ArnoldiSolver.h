@@ -155,12 +155,13 @@ iteration (const MatrixType &A, const VectorType &x0, VectorType &x)
 	ComplexEigenSolver<MatrixXcd> Eugen;
 	size_t max;
 	
-	dimKc = 1; // current Krylov dimension
+	dimKc = lambda.size(); // current Krylov dimension
 	vector<complex<double> > lambda_old(lambda.size());
 	for (int n=0; n<lambda.size(); ++n)
 	{
 		lambda_old[n] = complex<double>(1e3,1e3);
 	}
+	error = 1e3;
 	// Arnoldi construction of an orthogonal Krylov space basis
 	for (size_t k=1; k<=dimK; ++k)
 	{
@@ -180,13 +181,14 @@ iteration (const MatrixType &A, const VectorType &x0, VectorType &x)
 		Eugen.compute(h.topLeftCorner(dimKc,dimKc));
 		Eugen.eigenvalues().cwiseAbs().maxCoeff(&max);
 		
-		//lambda[0] = Eugen.eigenvalues()(max);
+		lambda[0] = Eugen.eigenvalues()(max);
+		errors[0] = abs(lambda[0]-lambda_old[0]);
 		
-		for (int n=0; n<lambda.size(); ++n)
+		for (int n=1; n<min(static_cast<int>(lambda.size()),static_cast<int>(Eugen.eigenvalues().rows())); ++n)
 		{
 			lambda[n] = find_nth_largest(n,Eugen.eigenvalues());
 			errors[n] = abs(lambda[n]-lambda_old[n]);
-			//lout << "n=" << n << ", error=" << errors[n] << endl;
+//			cout << "n=" << n << ", lambda=" << lambda[n] << ", error=" << errors[n] << endl;
 		}
 		error = *max_element(errors.begin(), errors.end());
 		
