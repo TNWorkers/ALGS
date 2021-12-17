@@ -20,6 +20,8 @@ public:
 	{
 		errors.resize(nmax);
 		lambda.resize(nmax);
+		index.resize(nmax);
+		Psi.resize(nmax);
 	}
 	
 	ArnoldiSolver (const MatrixType &A, VectorType &x, int nmax, double tol_input=1e-14);
@@ -30,7 +32,9 @@ public:
 	
 	string info() const;
 	
-	complex<double> get_lambda (int n) const {return lambda[n];};
+	complex<double> get_lambda  (int n) const {return lambda[n];};
+	complex<double> get_index   (int n) const {return lambda[n];};
+	VectorType get_excited      (int n) const {return Psi[n];};
 	
 private:
 	
@@ -41,6 +45,8 @@ private:
 	
 	vector<double> errors;
 	vector<complex<double> > lambda;
+	vector<int> index;
+	vector<VectorType> Psi;
 	
 	bool USER_HAS_FORCED_DIMK=false;
 	
@@ -85,6 +91,8 @@ ArnoldiSolver (const MatrixType &A, VectorType &x, int nmax, double tol_input)
 :tol(tol_input)
 {
 	lambda.resize(nmax);
+	index.resize(nmax);
+	Psi.resize(nmax);
 	errors.resize(nmax);
 	calc_dominant(A,x);
 }
@@ -125,21 +133,17 @@ calc_dominant (const MatrixType &A, VectorType &x)
 	while (error>tol and N_iter<ARNOLDI_MAX_ITERATIONS);
 }
 
-complex<double> find_nth_largest (int n, const VectorXcd &v)
+tuple<complex<double>,int> find_nth_largest (int n, const VectorXcd &v)
 {
 	vector<tuple<complex<double>,int>> vals;
 	for (int i=0; i<v.rows(); ++i) vals.push_back(make_tuple(v(i),i));
 	
 	sort(vals.begin(), vals.end(), [] (tuple<complex<double>,int> a, tuple<complex<double>,int> b)
 	{
-		//if (abs(get<0>(a)) == abs(get<0>(b)))
-		//{
-		//	return abs(get<0>(a)) > abs(get<0>(b));
-		//}
 		return abs(get<0>(a)) > abs(get<0>(b));
 	});
 	
-	return get<0>(vals[n]);
+	return vals[n];
 }
 
 template<typename MatrixType, typename VectorType>
@@ -186,7 +190,8 @@ iteration (const MatrixType &A, const VectorType &x0, VectorType &x)
 		
 		for (int n=1; n<min(static_cast<int>(lambda.size()),static_cast<int>(Eugen.eigenvalues().rows())); ++n)
 		{
-			lambda[n] = find_nth_largest(n,Eugen.eigenvalues());
+			lambda[n] = get<0>(find_nth_largest(n,Eugen.eigenvalues()));
+			index[n] = get<1>(find_nth_largest(n,Eugen.eigenvalues()));
 			errors[n] = abs(lambda[n]-lambda_old[n]);
 //			cout << "n=" << n << ", lambda=" << lambda[n] << ", error=" << errors[n] << endl;
 		}
@@ -202,8 +207,17 @@ iteration (const MatrixType &A, const VectorType &x0, VectorType &x)
 	assert(dimKc == Eugen.eigenvectors().rows() and "Bad Krylov matrix in ArndoldiSolver! Perhaps nan or all zero.");
 	for (size_t k=1; k<dimKc; ++k)
 	{
-//		x += Eugen.eigenvectors().col(max)(k) * Kbasis[k];
+		//x += Eugen.eigenvectors().col(max)(k) * Kbasis[k];
 		addScale(Eugen.eigenvectors().col(max)(k),Kbasis[k], x);
+	}
+	
+	for (int n=1; n<min(static_cast<int>(lambda.size()),static_cast<int>(Eugen.eigenvalues().rows())); ++n)
+	{
+		Psi[n-1] = Eugen.eigenvectors().col(index[n])(0) * Kbasis[0];
+		for (size_t k=1; k<dimKc; ++k)
+		{
+			addScale(Eugen.eigenvectors().col(index[n])(k),Kbasis[k], Psi[n-1]);
+		}
 	}
 }
 

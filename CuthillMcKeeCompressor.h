@@ -38,8 +38,9 @@ public:
 		for (int i=0; i<N; ++i)
 		for (int j=0; j<i; ++j)
 		{
-			if (abs(A(i,j)) > 0.)
+			//if (abs(A(i,j)) > 0.)
 			{
+				//cout<< i << "\t" << j << "\t" << Atmp(i,j) << "\t" << Atmp(j,i) << endl;
 				A_output(transform[i],transform[j]) = Atmp(i,j);
 				A_output(transform[j],transform[i]) = Atmp(j,i);
 			}
