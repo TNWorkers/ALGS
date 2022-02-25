@@ -113,8 +113,10 @@ run_algorithm()
 	{
 		for (int t=0; t<transform.size(); ++t)
 		{
-			lout << t << "→" << transform[t] << endl;
+			lout << t << "→" << transform[t];
+			if (t!=transform.size()-1) lout << ", ";
 		}
+		lout << endl;
 	}
 	
 	for (size_type c = 0; c != inv_perm.size(); ++c)

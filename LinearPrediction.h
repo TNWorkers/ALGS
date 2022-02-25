@@ -1,6 +1,8 @@
 #ifndef LINEAR_PREDICTION
 #define LINEAR_PREDICTION
 
+enum DEAL_WITH_DIV_EIGENVALUES {SET_ZERO=0, NORMALIZE=1, INVERT=2};
+
 MatrixXd pseudoInv (const MatrixXd &Min, double delta=1e-6)
 {
 	JacobiSVD<MatrixXd> Jack(Min,ComputeFullU|ComputeFullV);
@@ -20,7 +22,7 @@ MatrixXd pseudoInv (const MatrixXd &Min, double delta=1e-6)
 	return Jack.matrixV() * Sinv.asDiagonal() * Jack.matrixU().transpose();
 }
 
-VectorXd linearPrediction (const VectorXd &x, int N_new, double delta=0.)
+VectorXd linearPrediction (const VectorXd &x, int N_new, DEAL_WITH_DIV_EIGENVALUES VARIANT=SET_ZERO, double delta=0.)
 {
 	int L = x.rows()/2;
 	
@@ -79,10 +81,22 @@ VectorXd linearPrediction (const VectorXd &x, int N_new, double delta=0.)
 		// deal with divergent eigenvalues:
 		if (abs(lambda(i))>1)
 		{
-			lout << "i=" << i << "\tlambda(i)=" << lambda(i) << ", abs=" << abs(lambda(i)) << endl;
-//			lambda(i) = 0;
-			lambda(i) = lambda(i)/abs(lambda(i));
-//			lambda(i) = 1./conj(lambda(i));
+			lout << "i=" << i << "\tlambda(i)=" << lambda(i) << ", abs=" << abs(lambda(i)) << ", VARIANT=" << VARIANT << endl;
+			if (VARIANT==SET_ZERO)
+			{
+				lout << "setting to zero!" << endl;
+				lambda(i) = 0;
+			}
+			else if (VARIANT==NORMALIZE)
+			{
+				lout << "normalizing!" << endl;
+				lambda(i) = lambda(i)/abs(lambda(i));
+			}
+			else
+			{
+				lout << "inverting!" << endl;
+				lambda(i) = 1./conj(lambda(i));
+			}
 			++N_div;
 		}
 	}
@@ -100,9 +114,9 @@ VectorXd linearPrediction (const VectorXd &x, int N_new, double delta=0.)
 	return Vout;
 }
 
-void insert_linearPrediction (VectorXd &x, int N_new, double delta=0.)
+void insert_linearPrediction (VectorXd &x, int N_new, DEAL_WITH_DIV_EIGENVALUES VARIANT=SET_ZERO, double delta=0.)
 {
-	VectorXd pred = linearPrediction(x,N_new,delta);
+	VectorXd pred = linearPrediction(x,N_new,VARIANT,delta);
 	x.conservativeResize(x.rows()+N_new);
 	x.tail(N_new) = pred;
 }

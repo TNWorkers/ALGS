@@ -46,6 +46,9 @@ public:
 	double integrate (double xmax);
 	void setConstant (double c);
 	
+	double get_xmin() const {return data_x(0);};
+	double get_xmax() const {return data_x(data_x.rows()-1);};
+	
 private:
 	
 	Eigen::VectorXd data_x;

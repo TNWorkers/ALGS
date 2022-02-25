@@ -33,7 +33,6 @@ public:
 	string info() const;
 	
 	complex<double> get_lambda  (int n) const {return lambda[n];};
-	complex<double> get_index   (int n) const {return lambda[n];};
 	VectorType get_excited      (int n) const {return Psi[n];};
 	
 private:
