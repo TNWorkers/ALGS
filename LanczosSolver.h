@@ -418,7 +418,7 @@ iteration (const Hamiltonian &H, const VectorType &u)
 				reorthogonalize(0);
 			}
 		}
-
+		
 		// steps: 2 to dimK-2
 		for (int i=1; i<dimK-1; ++i)
 		{

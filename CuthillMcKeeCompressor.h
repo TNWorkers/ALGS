@@ -19,6 +19,8 @@ class CuthillMcKeeCompressor
 {
 public:
 	
+	CuthillMcKeeCompressor(){};
+	
 	CuthillMcKeeCompressor (const Array<Scalar,Dynamic,Dynamic> &A_input, bool PRINT_input=false)
 	:A(A_input), PRINT(PRINT_input)
 	{
