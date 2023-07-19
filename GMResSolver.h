@@ -2,7 +2,7 @@
 #define GENERICGMRESSOLVER
 
 #ifndef GMRES_MAX_ITERATIONS
-#define GMRES_MAX_ITERATIONS 10
+#define GMRES_MAX_ITERATIONS 4
 #endif
 
 #include "numeric_limits.h" // from TOOLS

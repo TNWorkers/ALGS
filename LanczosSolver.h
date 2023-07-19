@@ -654,6 +654,7 @@ info() const
 	ss << ", iterations=" << stat.last_N_iter
 	<< ", mvms=" << stat.N_mvm
 	<< ", mem=" << round(stat.last_memory,3) << "GB"
+	<< ", mem(ψ)=" << round(::calc_memory<Scalar>(dimH),3)
 	<< ", err_eigval=" << err_eigval
 	<< ", err_state=" << err_state;
 	
@@ -702,31 +703,31 @@ calc_memory (const Hamiltonian &H, const VectorType &V, MEMUNIT memunit) const
 	size_t try_dimV = dim(V);
 	size_t dimH = max(try_dimH, try_dimV);
 	
-	int N_vec = 1;
-	
-	if (USER_HAS_FORCED_EFFICIENCY == false)
-	{
-		if (dimH > LANCZOS_MEMORY_THRESHOLD)
-		{
-			N_vec += 3;
-		}
-		else
-		{
-			N_vec += dimK;
-		}
-	}
-	else
-	{
-		if (CHOSEN_EFFICIENCY == LANCZOS::EFFICIENCY::TIME)
-		{
-			N_vec += dimK;
-		}
-		else if (CHOSEN_EFFICIENCY == LANCZOS::EFFICIENCY::MEMORY)
-		{
-			N_vec += 3;
-		}
-	}
-	return N_vec * (::calc_memory<Scalar>(dimH,memunit));
+//	int N_vec = 1;
+//	
+//	if (USER_HAS_FORCED_EFFICIENCY == false)
+//	{
+//		if (dimH > LANCZOS_MEMORY_THRESHOLD)
+//		{
+//			N_vec += 3;
+//		}
+//		else
+//		{
+//			N_vec += dimK;
+//		}
+//	}
+//	else
+//	{
+//		if (CHOSEN_EFFICIENCY == LANCZOS::EFFICIENCY::TIME)
+//		{
+//			N_vec += dimK;
+//		}
+//		else if (CHOSEN_EFFICIENCY == LANCZOS::EFFICIENCY::MEMORY)
+//		{
+//			N_vec += 3;
+//		}
+//	}
+	return Kbasis.size() * (::calc_memory<Scalar>(dimH,memunit));
 }
 //--------------</info>--------------
 

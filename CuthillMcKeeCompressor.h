@@ -136,6 +136,18 @@ run_algorithm()
 		}
 	}
 	
+//	// Compute the bandwidth of the compressed graph
+//	vector<pair<size_t, size_t>> edges_new;
+//	for (int i=0; i<N; ++i)
+//	for (int j=i+1; j<N; ++j)
+//	{
+//		if (abs(A_compressed(i,j)) > 0.) edges_new.push_back(pair<size_t, size_t>(i,j));
+//	}
+//	// construct graph
+//	Graph G_new(N);
+//	for (int i=0; i<edges_new.size(); ++i) add_edge(edges_new[i].first, edges_new[i].second, G_new);
+//	int b_new = bandwidth(G_new);
+	
 	if (PRINT) lout << "Reverse Cuthill-McKee ordering starting at: " << s << ", bandwidth reduction: " << b << "→" << b_new << endl;
 	
 //	return A_compressed;
