@@ -1,0 +1,246 @@
+\documentclass[8pt, a4paper]{article}
+	\usepackage[utf8]{inputenc}
+	\usepackage[T1]{fontenc}
+	\usepackage[DIV15]{typearea}
+	\usepackage{amssymb}
+	\usepackage{amsmath}
+	\usepackage{enumitem}
+	\setlength{\parindent}{0cm}
+	\usepackage[a4paper,width=160mm,top=25mm,bottom=25mm,bindingoffset=6mm]{geometry}
+	\usepackage[ngerman]{babel}
+	\usepackage{enumitem}
+	\usepackage{dsfont}
+	\usepackage{cancel}
+
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\skp}[2]{\left\langle#1,#2\right\rangle}
+\newcommand{\transp}{\intercal}
+\newcommand{\ket}[1]{\left\vert#1\right\rangle}
+\newcommand{\bra}[1]{\left\langle#1\right\vert}
+\newcommand{\bracket}[3]{\left\langle#1\middle\vert#2\middle\vert#3\right\rangle}
+\newcommand{\braket}[2]{\left\langle#1\middle\vert#2\right\rangle}
+\newcommand{\expec}[1]{\left\langle#1\right\rangle}
+\begin{document}
+\section*{BCS-like self-consistent mean-field decoupling for nuclear pairing Hamiltonian}
+
+Nuclear-pairing Hamilton operator (consider that $m=0$ is impossible since $j=l\pm \tfrac 12$ is half-integer):
+
+\begin{align*}
+H &= \sum_{j,m}\varepsilon_j a_{jm}^\dagger a_{jm} - \frac 14\sum_{j,m}\sum_{j',m'}G_{jj'}(-1)^{j-m}a_{jm}^\dagger a_{j-m}^\dagger \cdot (-1)^{j'-m'}a_{j'-m'} a_{j'm'}
+\\&=
+\sum_{j,m>0}\varepsilon_j \left(a_{jm}^\dagger a_{jm} + a_{j-m}^\dagger a_{j-m}\right) - \sum_{j,m>0}\sum_{j',m'>0}G_{jj'}(-1)^{j-m+j'-m'}a_{jm}^\dagger a_{j-m}^\dagger a_{j'-m'} a_{j'm'}
+\end{align*}
+
+\subsection*{Approach 1: Mean-field treatment of Hamiltonian}
+Mean-field decoupling à la BCS -- keep matrix elements $\expec{a_{j-m}a_{jm}}$ (time-conjugate partners) and $n_{jm} = \expec{a_{jm}^\dagger a_{jm}}$ (density) -- whether or not the latter is taken into account is controlled by a parameter $\xi\in\{0,1\}$:
+
+\begin{align*}
+H_\mathrm{MF} &=
+\sum_{j,m>0}\varepsilon_j \left(a_{jm}^\dagger a_{jm} + a_{j-m}^\dagger a_{j-m}\right)
+-\sum_{j,m>0}\sum_{j',m'>0}G_{jj'}(-1)^{j-m+j'-m'}\expec{a_{jm}^\dagger a_{j-m}^\dagger} a_{j'-m'} a_{j'm'}
+\\&- \sum_{j,m>0}\sum_{j',m'>0}G_{jj'}(-1)^{j-m+j'-m'}\expec{a_{j'-m'} a_{j'm'}}a_{jm}^\dagger a_{j-m}^\dagger
+\\&+\sum_{j,m>0}\sum_{j',m'>0}G_{jj'}(-1)^{j-m+j'-m'}\expec{a_{jm}^\dagger a_{j-m}^\dagger}\expec{ a_{j'-m'} a_{j'm'}}
+\\&-\xi\sum_{j,m>0}G_{jj}(-1)^{2(j-m)}\left(n_{jm}a_{j-m}^\dagger a_{j-m} + n_{j-m}a_{jm}^\dagger a_{jm} - n_{jm}n_{j-m}\right)
+\end{align*}
+
+
+Define:
+
+\begin{align*}
+\Delta_j &= \sum_{j',m'>0}G_{jj'}(-1)^{j'-m'}\expec{a_{j'-m'}a_{j'm'}}
+\quad
+\Rightarrow\quad \Delta_j^* = \sum_{j',m'>0}G_{j'j}(-1)^{j'-m'}\expec{a_{j'm'}^\dagger a_{j'-m'}^\dagger}
+\\
+\mathcal E &= \sum_{j,m>0}\sum_{j',m'>0}G_{jj'}(-1)^{j-m+j'-m'}\expec{a_{jm}^\dagger a_{j-m}^\dagger}\expec{a_{j'-m'}a_{j'm'}} + \xi\sum_{j,m>0}G_{jj}n_{jm}n_{j-m}
+\end{align*}
+
+A Bogoliubov transformation yields a representation with conservation of quasiparticle number:
+
+\begin{align*}
+b_{jm} = \begin{cases}
+a_{jm}\quad&m>0\\
+(-1)^{j+m}a_{jm}^\dagger\quad&m<0
+\end{cases}\qquad\text{with fermionic operators:}\quad
+\left\{b_{jm},b_{j'm'}\right\}=0, \quad \left\{b_{jm},b_{j'm'}^\dagger\right\}=\delta_{jj'}\delta_{mm'}
+\end{align*}
+
+\begin{align*}
+H_\mathrm{MF} &=
+\sum_{j,m>0}\left(\left(\varepsilon_j-\xi G_{jj}n_{j-m}\right) b_{jm}^\dagger b_{jm} + \left(\varepsilon_j-\xi G_{jj}n_{jm}\right) b_{j-m} b_{j-m}^\dagger - \Delta_j b_{jm}^\dagger b_{j-m} - \Delta_j^* b_{j-m}^\dagger b_{jm}\right)+\mathcal E
+\\&=
+\sum_{j,m>0}\left(\left(\varepsilon_j-\xi G_{jj}n_{j-m}\right) b_{jm}^\dagger b_{jm} - \left(\varepsilon_j-\xi G_{jj}n_{jm}\right) b_{j-m}^\dagger b_{j-m} - \Delta_j b_{jm}^\dagger b_{j-m} - \Delta_j^* b_{j-m}^\dagger b_{jm}\right)+\widetilde{\mathcal E}
+\end{align*}
+
+where:
+
+\begin{align*}
+m>0:&\quad n_{jm} = \expec{b_{jm}^\dagger b_{jm}}, \quad n_{j-m} = \expec{b_{j-m}b_{j-m}^\dagger} = 1 - \expec{b_{j-m}^\dagger b_{j-m}}
+\\
+\Delta_j &= \sum_{j',m'>0} G_{jj'}\expec{b_{j'-m'}^\dagger b_{j'm'}}
+\qquad\text{and}\qquad
+\Delta_j^* = \sum_{j',m'>0} G_{j'j}\expec{b_{j'm'}^\dagger b_{j'-m'}}
+\\
+\widetilde{\mathcal E} &= \sum_{j,m>0}\sum_{j',m'>0}G_{jj'}\expec{b_{jm}^\dagger b_{j-m}}\expec{b_{j'-m'}^\dagger b_{j'm'}}+\xi\sum_{j,m>0}G_{jj}n_{jm}n_{j-m}+\sum_{j,m>0}\left(\varepsilon_j-\xi G_{jj}n_{jm}\right)
+\end{align*}
+
+The Hamilton operator can be brought into matrix form by introducing the vector of operators $\boldsymbol b^\dagger = \begin{pmatrix}\cdots&b_{jm}^\dagger&\cdots\end{pmatrix}$:
+
+\begin{align*}
+H_\mathrm{MF} &=\boldsymbol b^\dagger \underline h \boldsymbol b +\widetilde{\mathcal E}= \sum_{j,m}\sum_{j',m'}h_{jm,j'm'}b_{jm}^\dagger b_{jm'} + \widetilde{\mathcal E}
+\end{align*}
+
+where:
+
+\begin{align*}
+h_{jm,j'm'} &= \delta_{jj'}\delta_{mm'}\sgn(m)\left(\varepsilon_j -\xi G_{jj}n_{j-m}\right)- \delta_{jj'}\delta_{m-m'}(\mathrm{Re}(\Delta_j) + \mathrm i\,\sgn(m)\mathrm{Im}(\Delta_j))
+\end{align*}
+
+$\underline U$ shall be the unitary matrix that diagonalizes $\underline h$: $\underline U^\dagger \underline h \underline U = \mathrm{diag}(\lambda_1,\ldots,\lambda_L)$.\\
+Define new fermionic operators:
+
+\begin{align*}
+\boldsymbol c &:= \underline U^\dagger \boldsymbol b\qquad\Rightarrow\qquad c_{l} = \sum_{j,m} U_{jm,l}^*b_{jm}\qquad\text{or}\qquad b_{jm} = \sum_lU_{jm,l}c_l
+\end{align*}
+
+The spectrum of the Hamilton operator is symmetric around 0, so the amount of positive single-particle energies $\lambda_l$ equals the amount of negative ones. The ground state is given by $\ket 0 = \prod_l^{\lambda_l<0}c_l^\dagger \ket{\mathrm{vac}_b}$, where this vacuum state is the common vacuum of operators $b_{jm}$ and $c_{jm}$. It can be constructed from the physical vacuum of operators $a_{jm}$ by occupying all single-particle orbitals with $m<0$: $\ket{\mathrm{vac}_b} = \prod_{j,m<0}a_{jm}^\dagger \ket{\mathrm{vac}_a}$.\\
+
+$\Delta_j$ and $n_{j\pm m}$, which have to be found self-consistently, can be expressed as:
+
+\begin{align*}
+m>0:&\quad n_{jm} = \expec{b_{jm}^\dagger b_{jm}} = \sum_{l,l'}U_{jm,l}^*U_{jm,l'}\bracket0{c_l^\dagger c_{l'}}0 = \sum_{l,l'}U_{jm,l}^*U_{jm,l'}\delta_{ll'}\Theta(-\lambda_l)= \sum_l^{\lambda_l < 0}\vert U_{jm,l}\vert^2
+\\
+&\quad n_{j-m} = 1-\expec{b_{j-m}^\dagger b_{j-m}} = 1-\sum_{l,l'}U_{j-m,l}^*U_{j-m,l'}\bracket0{c_l^\dagger c_{l'}}0 = 1-\sum_l^{\lambda_l < 0}\vert U_{j-m,l}\vert^2
+\\
+\Delta_j &= \sum_{j',m'>0} G_{jj'}\expec{b_{j'-m'}^\dagger b_{j'm'}} = \sum_{j',m'>0}G_{jj'}\sum_{l,l'}U_{j'-m',l}^* U_{j'm',l'}\bracket 0{c_l^\dagger c_{l'}}0
+\\&=
+\sum_{j',m'>0}G_{jj'}\sum_l^{\lambda_l<0}U_{j'-m',l}^* U_{j'm',l}
+\end{align*}
+
+and for the energy one finds:
+
+\begin{align*}
+E_\mathrm{MF} &= \sum_{j,m>0}\varepsilon_j\left(1+\sum_l^{\lambda_l<0}\left(\vert U_{jm,l}\vert^2 - \vert U_{j-m,l}\vert^2\right)\right) - \sum_{j,m>0}\sum_{j',m'>0}G_{jj'}\sum_l^{\lambda_l<0}U_{jm,l}^*U_{j-m,l}\sum_{l'}^{\lambda_{l'}<0}U_{j'-m',l'}^*U_{j'm',l'}
+\\&+\xi \sum_{j,m>0}G_{jj}\sum_l^{\lambda_l<0}\vert U_{jm,l}\vert^2\left(1-\sum_{l'}^{\lambda_{l'}<0}\vert U_{j-m,l'}\vert^2\right)
+\end{align*}
+
+In the self-consistency cycle one starts with an initial choice for $\Delta_j\neq 0$, diagonalizes the Hamilton matrix for these parameters and calculates the new $\Delta_j$ from the obtained diagonalization coefficients. This procedure is repeated until the parameters do not change significantly anymore.
+
+
+
+\newpage
+
+The full Hamiltonian $H$ possesses a symmetry related to time reversal: $V^\dagger\,a_{jm}\, V = (-1)^{j-m}a_{j-m}$. The transformation with $V$ leaves the Hamiltonian invariant. Therefore, one can assume this symmetry to persist after mean-field decoupling. This is fulfilled, if $n_{jm} = n_{j-m}$ -- and if this is the case for the parameters in the Hamiltonian, then the results obtained from this Hamiltonian also share this property. Therefore, $n_{jm} = n_{j-m}$ is a stable condition for the self-consistency cycle.\\
+
+Moreover, the Hamiltonian can be brought to another form:
+
+\begin{align*}
+H_\mathrm{MF} &= \sum_{j,m>0}\begin{pmatrix}a_{jm}^\dagger & a_{j-m}\end{pmatrix}\begin{pmatrix}\varepsilon_j -\xi G_{jj}\expec{a_{j-m}^\dagger a_{j-m}}&-(-1)^{j-m}\Delta_j\\-(-1)^{j-m}\Delta_j^*&-\varepsilon_j + \xi G_{jj}\expec{a_{jm}^\dagger a_{jm}}\end{pmatrix}\begin{pmatrix}a_{jm}\\a_{j-m}^\dagger\end{pmatrix}+\widetilde{\mathcal E}
+\\&=
+\sum_{j,m>0}\begin{pmatrix}a_{jm}^\dagger & (-1)^{j-m}a_{j-m}\end{pmatrix}\begin{pmatrix}\varepsilon_j - \xi G_{jj}\expec{a_{j-m}^\dagger a_{j-m}}&-\Delta_j\\-\Delta_j^*&-\varepsilon_j + \xi G_{jj}\expec{a_{jm}^\dagger a_{jm}}\end{pmatrix}\begin{pmatrix}a_{jm}\\(-1)^{j-m}a_{j-m}^\dagger\end{pmatrix}+\widetilde{\mathcal E}
+\\&=
+\sum_{j,m>0}\begin{pmatrix}a_{jm}^\dagger & \widetilde a_{j-m}\end{pmatrix}\begin{pmatrix}\varepsilon_j -\xi  G_{jj}\expec{\widetilde a_{j-m}^\dagger \widetilde a_{j-m}}&-\Delta_j\\-\Delta_j^*&-\varepsilon_j +\xi G_{jj}\expec{a_{jm}^\dagger a_{jm}}\end{pmatrix}\begin{pmatrix}a_{jm}\\\widetilde a_{j-m}^\dagger\end{pmatrix}+\widetilde{\mathcal E}
+\end{align*}
+
+This $2\times 2$ matrix equation is the same for all values of $m$ for a certain $j$ -- thus, one may conclude that for all $m>0$ and $m'>0$ one obtains the same density $n_{jm}=n_{jm'}$. Together with the previous result, one can conclude: $\expec{a_{jm}^\dagger a_{jm}} = n_j$ for all values of $m$. Additionally, one can perform a phase shift of the one-particle orbitals and of the creators/annihilators correspondingly, such that the phase of $\Delta_j$ can be shifted to any value -- in particular, $\Delta_j$ can be chosen real.\\
+
+The mean-field Hamiltonian then reads:
+
+\begin{align*}
+H_\mathrm{MF} &= \sum_{j,m>0}(\varepsilon_j - \xi G_{jj}n_j)\left(a_{jm}^\dagger a_{jm} - a_{j-m}^\dagger a_{j-m}\right) - \sum_{j,m>0}\sum_{j',m'>0}(-1)^{j-m}\Delta_j\left(a_{jm}^\dagger a_{j-m}^\dagger + a_{j-m}a_{jm}\right) + \widetilde{\mathcal E}
+\end{align*}
+
+Using this relations, the Hamilton matrix can be simplified:
+
+\begin{align*}
+h_{jm,j'm'} &= \delta_{jj'}\delta_{mm'}\sgn(m)\left(\varepsilon_j -\xi G_{jj}n_j\right)- \delta_{jj'}\delta_{m-m'}\Delta_j
+\end{align*}
+
+\newpage
+\subsection*{Approach 2: Explicit trial wave function}
+
+\begin{align*}
+\ket{\Psi_\mathrm{trial}} &= \prod_{j,m>0}\left(u_j + (-1)^{j-m}v_j a_{jm}^\dagger a_{j-m}^\dagger\right)\ket{\mathrm{vac}} \qquad\text{with real variational parameters}
+\end{align*}
+
+The operator-valued factors mutually commute, and the relation $u_j^2+v_j^2=1$ sets the norm of $\ket\Psi$ to 1. The gap parameters $\Delta_j$ can be evaluated using this ansatz:
+
+
+\begin{align*}
+\Delta_j &= \sum_{j',m'>0}G_{jj'}(-1)^{j'-m'}\bracket{\Psi_\mathrm{trial}}{a_{j'-m'}a_{j'm'}}{\Psi_\mathrm{trial}}
+\\&=
+\sum_{j',m'>0}G_{jj'}(-1)^{j'-m'}\\&\quad\times\bracket{\mathrm{vac}}{\left(u_{j'} + (-1)^{j'-m'}v_{j'}a_{j'-m'}a_{j'm'}\right)a_{j'-m'}a_{j'm'}\left(u_{j'} + (-1)^{j'-m'}v_{j'}a_{j'm'}^\dagger a_{j'-m'}^\dagger\right)}{\mathrm{vac}}
+\\&=
+\sum_{j',m'>0}G_{jj'}u_{j'}v_{j'}\bracket{\mathrm{vac}}{a_{j'-m'}a_{j'm'}a_{j'm'}^\dagger a_{j'-m'}^\dagger}{\mathrm{vac}}=\sum_{j'}\left(j'+\tfrac 12\right)G_{jj'}u_{j'}v_{j'}
+\end{align*}
+
+The expectation value of the energy is:
+
+\begin{align*}
+&E_\mathrm{trial} = \bracket{\Psi_\mathrm{trial}}H{\Psi_\mathrm{trial}}
+\\&=
+\bra{\mathrm{vac}\vphantom{a_j^\dagger}}\prod_{j''',m'''>0}\left(u_{j'''} + (-1)^{j'''-m'''}v_{j'''}a_{j'''-m'''}a_{j'''m'''}\right)
+\bigg(
+\sum_{j,m>0}\varepsilon_j\left(a_{jm}^\dagger a_{jm} + a_{j-m}^\dagger a_{j-m}\right) 
+\\&\qquad\qquad
+-\sum_{j,m>0}G_{jj}a_{jm}^\dagger a_{j-m}^\dagger a_{j-m}a_{jm}- \sum_{j,m>0}\sum_{j',m'>0}^{(j',m')\neq (j,m)}G_{jj'}(-1)^{j-m+j'-m'}a_{jm}^\dagger a_{j-m}^\dagger a_{j'-m'}a_{j'm'}
+\bigg)
+\\&\qquad
+\prod_{j'',m''>0}\left(u_{j''} +(-1)^{j''-m''}v_{j''}a_{j''m''}^\dagger a_{j''-m''}^\dagger\right)\ket{\mathrm{vac}\vphantom{a_j^\dagger}}
+\\&=
+\sum_{j,m>0}\varepsilon_j\bracket{\mathrm{vac}}{\left(u_j + (-1)^{j-m}v_ja_{j-m}a_{jm}\right)\left(a_{jm}^\dagger a_{jm} + a_{j-m}^\dagger a_{j-m}\right)\left(u_j + (-1)^{j-m}v_j a_{jm}^\dagger a_{j-m}^\dagger\right)}{\mathrm{vac}}
+\\&\qquad-
+\sum_{j,m>0}G_{jj}\bracket{\mathrm{vac}}{\left(u_j + (-1)^{j-m}v_ja_{j-m}a_{jm}\right)a_{jm}^\dagger a_{j-m}^\dagger a_{j-m} a_{jm}\left(u_j + (-1)^{j-m}v_j a_{jm}^\dagger a_{j-m}^\dagger\right)}{\mathrm{vac}}
+\\&\qquad-
+\sum_{j,m>0}\sum_{j',m'>0}^{(j',m')\neq(j,m)}G_{jj'}(-1)^{j-m+j'-m'}\bra{\mathrm{vac}\vphantom{a_j^\dagger}} \left(u_j + (-1)^{j-m}v_ja_{j-m}a_{jm}\right)\left(u_{j'} + (-1)^{j'-m'}v_{j'}a_{j'-m'}a_{j'm'}\right)
+\\&\qquad\qquad\times a_{jm}^\dagger a_{j-m}^\dagger a_{j'-m'}a_{j'm'}\left(u_{j'} + (-1)^{j'-m'}v_{j'} a_{j'm'}^\dagger a_{j'-m'}^\dagger\right)\left(u_j + (-1)^{j-m}v_ja_{jm}^\dagger a_{j-m}^\dagger\right)\ket{\mathrm{vac}\vphantom{a_j^\dagger}}
+\\&=
+\sum_{j,m>0}\varepsilon_jv_j^2\bracket{\mathrm{vac}}{a_{j-m}a_{jm}\left(a_{jm}^\dagger a_{jm} + a_{j-m}^\dagger a_{j-m}\right)a_{jm}^\dagger a_{j-m}^\dagger}{\mathrm{vac}}
+\\&\qquad-
+\sum_{j,m>0}G_{jj}v_j^2\bracket{\mathrm{vac}}{a_{j-m}a_{jm}\cdot a_{jm}^\dagger a_{j-m}^\dagger a_{j-m} a_{jm}\cdot a_{jm}^\dagger a_{j-m}^\dagger}{\mathrm{vac}}
+\\&\qquad-
+\sum_{j,m>0}\sum_{j',m'>0}^{(j',m')\neq(j,m)}G_{jj'}u_jv_ju_{j'} v_{j'}\bracket{\mathrm{vac}}{a_{j-m}a_{jm}\cdot a_{jm}^\dagger a_{j-m}^\dagger a_{j'-m'} a_{j'm'}\cdot a_{j'm'}^\dagger a_{j'-m'}^\dagger}{\mathrm{vac}}
+\\&=
+\sum_{j,m>0}\left(2\varepsilon_j - G_{jj}\right)v_j^2 - \sum_{j,m>0}\sum_{j',m'>0}^{(j',m')\neq(j,m)}G_{jj'}u_jv_ju_{j'}v_{j'}
+\\&=
+\sum_{j,m>0}\left(2\varepsilon_j - G_{jj}\right)v_j^2 - \sum_{j,m>0}\sum_{j',m'>0}G_{jj'}u_jv_ju_{j'}v_{j'} + \sum_{j,m>0}G_{jj}u_j^2v_j^2
+\\&=
+\sum_{j,m>0}\left(2\varepsilon_j - G_{jj}v_j^2\right)v_j^2 - \sum_{j,m>0}\sum_{j',m'>0}G_{jj'}u_jv_ju_{j'}v_{j'}
+\end{align*}
+
+\newpage
+
+Minimization of the energy with respect to the normalization constraint yields:
+
+\begin{align*}
+\mathcal L &= E + \sum_{j,m>0}\lambda_j \left(u_j^2+v_j^2 - 1\right)
+\\&= \sum_{j,m>0}\left(2\varepsilon_j - G_{jj}v_j^2\right)v_j^2 - \sum_{j,m>0}\sum_{j',m'>0}G_{jj'}u_jv_ju_{j'}v_{j'} + \sum_{j,m>0}\lambda_j\left(u_j^2+v_j^2-1\right)
+\\
+0\stackrel != \frac{\partial \mathcal L}{\partial u_j} \quad \Rightarrow\quad& 0=\left(j+\tfrac 12\right)\left(-2v_j\sum_{j',m'>0}G_{jj'}u_{j'}v_{j'} + 2\lambda_j u_j\right)
+\quad\Rightarrow\quad v_j\Delta_j = \lambda_j u_j
+\\
+0\stackrel != \frac{\partial \mathcal L}{\partial v_j} \quad \Rightarrow\quad& 0=\left(j+\tfrac 12\right)\left(4\left(\varepsilon_j - G_{jj}v_j^2\right)v_j-2u_j\sum_{j',m'>0}G_{jj'}u_{j'}v_{j'} + 2\lambda_j v_j\right)
+\\\Rightarrow\quad& \left(2\varepsilon_j - 2G_{jj}v_j^2+ \lambda_j\right)v_j = \Delta_j u_j
+\end{align*}
+
+Approximation: $\varepsilon_j - G_{jj}v_j^2 \approx \varepsilon_j - \frac{G_{jj}}2=\widetilde \varepsilon_j$ (is this justified?) and parametrization $u_j = \cos(\phi_j)$, $v_j = \sin(\phi_j)$:
+
+\begin{align*}
+\left(2\widetilde\varepsilon_j + \frac{v_j\Delta_j}{u_j}\right)v_j = \Delta_j u_j
+\quad\Rightarrow\quad 2\widetilde \varepsilon_j \sin(\phi_j)\cos(\phi_j) = \Delta_j\left(\cos^2(\phi_j)  - \sin^2(\phi_j)\right)
+\quad\Rightarrow\quad \tan(2\phi_j) = \frac{\Delta_j}{\widetilde \varepsilon_j}
+\end{align*}
+
+From this one obtains:
+
+\begin{align*}
+u_j &= \cos(\phi_j) = \sqrt{\frac{1+\cos(2\phi_j)}2} = \sqrt{\frac 12}\cdot\sqrt{1 + \frac{\cos(2\phi_j)}{\sqrt{\cos^2(2\phi_j) + \sin^2(2\phi_j)}}} = \sqrt{\frac 12}\cdot\sqrt{1 + \frac{\widetilde\varepsilon_j}{\sqrt{\widetilde\varepsilon_j^{\;2}+\Delta_j^2}}}
+\\
+v_j &= \sin(\phi_j) = \sqrt{\frac{1 - \cos(2\phi_j)}2} = \sqrt{\frac 12}\cdot\sqrt{1 - \frac{\widetilde\varepsilon_j}{\sqrt{\widetilde\varepsilon_j^{\;2}+\Delta_j^2}}}
+\end{align*}
+
+With this, the gap equation can be formulated:
+
+\begin{align*}
+\Delta_j &= \sum_{j',m'>0}G_{jj'}u_{j'}v_{j'} = \sum_{j'}\left(j' + \tfrac 12\right)\cdot\frac 12\sqrt{1-\frac{\widetilde\varepsilon_{j'}^{\;2}}{\widetilde\varepsilon_{j'}^{\;2} + \Delta_{j'}^2}} = \sum_{j'}\left(\frac{j'}2 + \frac 14\right)\frac{\Delta_{j'}}{\sqrt{\widetilde\varepsilon_{j'}^{\;2} + \Delta_{j'}^2}}
+\end{align*}
+\end{document}

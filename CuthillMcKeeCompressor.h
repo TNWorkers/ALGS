@@ -21,20 +21,20 @@ public:
 	
 	CuthillMcKeeCompressor(){};
 	
-	CuthillMcKeeCompressor (const Array<Scalar,Dynamic,Dynamic> &A_input, bool PRINT_input=false)
+	CuthillMcKeeCompressor (const Eigen::Array<Scalar,Eigen::Dynamic,Eigen::Dynamic> &A_input, bool PRINT_input=false)
 	:A(A_input), PRINT(PRINT_input)
 	{
 		run_algorithm();
 	}
 	
-	Array<Scalar,Dynamic,Dynamic> get_result() const {return A_compressed;};
+	Eigen::Array<Scalar,Eigen::Dynamic,Eigen::Dynamic> get_result() const {return A_compressed;};
 	
 	vector<size_t> get_transform() const {return transform;};
 	vector<size_t> get_inverse() const {return inverse;};
 	
-	void apply_compression (Array<Scalar,Dynamic,Dynamic> &A_output)
+	void apply_compression (Eigen::Array<Scalar,Eigen::Dynamic,Eigen::Dynamic> &A_output)
 	{
-		Array<Scalar,Dynamic,Dynamic> Atmp = A_output;
+		Eigen::Array<Scalar,Eigen::Dynamic,Eigen::Dynamic> Atmp = A_output;
 		int N = Atmp.rows();
 		A_output.resize(N,N); A_output.setZero();
 		for (int i=0; i<N; ++i)
@@ -49,12 +49,19 @@ public:
 		}
 	}
 	
+	template<typename OtherScalar>
+	void apply_compression (vector<OtherScalar> &V_output)
+	{
+		vector<OtherScalar> Vtmp = V_output;
+		for (int i=0; i<V_output.size(); ++i) V_output[get_transform()[i]] = Vtmp[i];
+	}
+	
 private:
 	
 	void run_algorithm();
 	
 	bool PRINT;
-	Array<Scalar,Dynamic,Dynamic> A, A_compressed;
+	Eigen::Array<Scalar,Eigen::Dynamic,Eigen::Dynamic> A, A_compressed;
 	vector<size_t> transform, inverse;
 };
 
@@ -154,13 +161,13 @@ run_algorithm()
 }
 
 template<typename Scalar>
-Array<Scalar,Dynamic,Dynamic> compress_CuthillMcKee (const Array<Scalar,Dynamic,Dynamic> &A, bool PRINT=false)
+Eigen::Array<Scalar,Eigen::Dynamic,Eigen::Dynamic> compress_CuthillMcKee (const Eigen::Array<Scalar,Eigen::Dynamic,Eigen::Dynamic> &A, bool PRINT=false)
 {
 	CuthillMcKeeCompressor<Scalar> CMK(A,PRINT);
 	return CMK.get_result();
 }
 
-//vector<size_t> transform_CuthillMcKee (const ArrayXXd &A, bool PRINT=false)
+//vector<size_t> transform_CuthillMcKee (const Eigen::ArrayXXd &A, bool PRINT=false)
 //{
 //	assert(A.rows() == A.cols());
 //	int N = A.rows();
@@ -216,7 +223,7 @@ Array<Scalar,Dynamic,Dynamic> compress_CuthillMcKee (const Array<Scalar,Dynamic,
 ////	perm[index_map[inv_perm[c]]] = c;
 ////	int b_new = bandwidth(G, make_iterator_property_map(&perm[0], index_map, perm[0]));
 ////	
-////	ArrayXXd res(N,N); res.setZero();
+////	Eigen::ArrayXXd res(N,N); res.setZero();
 ////	for (int i=0; i<N; ++i)
 ////	for (int j=0; j<i; ++j)
 ////	{
